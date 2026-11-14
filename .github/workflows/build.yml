@@ -2,12 +2,14 @@ name: Build Kernel A145P
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag (e.g. v1.3). Leave empty to only build an artifact.'
+        description: 'Release tag (e.g. v1.4). Leave empty to derive it from CONFIG_LOCALVERSION.'
         required: false
         default: ''
 
@@ -20,14 +22,18 @@ env:
   MODE: user
   # Base firmware release must stay identical to stock so the vermagic stamp
   # matches the prebuilt /vendor modules. The user-visible release string adds
-  # the "behi" branding at the end:
+  # the "behi" branding and the package version at the end:
   # 6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.3
-  # When bumping the version, update CONFIG_LOCALVERSION in
-  # kernel-6.6/arch/arm64/configs/gki_defconfig as well.
+  #
+  # Cutting a new release (every kernel update):
+  #   1. bump CONFIG_LOCALVERSION ("-4k-behi-vX.Y") in
+  #      kernel-6.6/arch/arm64/configs/gki_defconfig and
+  #      kernel/kernel_device_modules-6.6/arch/arm64/configs/a14m_defconfig
+  #   2. push/merge to main: the workflow derives the tag from that value,
+  #      builds and publishes the GitHub release automatically.
   BUILD_NUMBER: A145PXXSDDZH1
-  EXPECTED_KERNEL_RELEASE: 6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.3
+  KERNEL_BASE_RELEASE: 6.6.92-android15-8-abA145PXXSDDZH1-4k
   STOCK_VERMAGIC: '6.6.92-android15-8-abA145PXXSDDZH1-4k SMP preempt mod_unload modversions aarch64'
-  BRAND_SUFFIX: '-behi-v1.3'
   KSU_TAG: v3.3.1
   KSU_COMMIT: 0c0fdb960178fa12d80d6cbcfdcb6ad8be6a865d
   KSU_COMMITS: '2680'
@@ -60,20 +66,49 @@ jobs:
           } >> "$GITHUB_ENV"
 
           VERSION=""
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          elif [ -n "${{ inputs.release_tag }}" ]; then
-            VERSION="${{ inputs.release_tag }}"
-            VERSION="${VERSION#v}"
-          fi
-          if [ -z "$VERSION" ]; then
+          TAG=""
+          if [ -n "${{ inputs.release_tag }}" ]; then
+            REQ="${{ inputs.release_tag }}"
+            REQ="${REQ#v}"
+            TAG="v${REQ}"
+            VERSION="${REQ}"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+          elif [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            # The version is the one baked into CONFIG_LOCALVERSION, so a
+            # kernel update plus a version bump is all that a release needs.
+            VERSION="$(sed -n 's/^CONFIG_LOCALVERSION="-4k-behi-v\([^"]*\)"$/\1/p' \
+              kernel-6.6/arch/arm64/configs/gki_defconfig | head -n1)"
+            if [ -z "$VERSION" ]; then
+              echo "ERROR: cannot derive the version from CONFIG_LOCALVERSION"
+              grep -n '^CONFIG_LOCALVERSION' kernel-6.6/arch/arm64/configs/gki_defconfig || true
+              exit 1
+            fi
+            TAG="v${VERSION}"
+          else
             VERSION="0.0.0-${SHORT_SHA}"
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          # Expose the value as a step output too: the expression env context
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "BRAND_SUFFIX=-behi-v${VERSION}" >> "$GITHUB_ENV"
+          echo "EXPECTED_KERNEL_RELEASE=${KERNEL_BASE_RELEASE}-behi-v${VERSION}" >> "$GITHUB_ENV"
+          # Expose the values as step outputs too: the expression env context
           # is not reliably populated from GITHUB_ENV.
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Building version: $VERSION"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Building version: ${VERSION} (tag: ${TAG:-none})"
+
+          # One release per version. Refuse to silently overwrite a tag that
+          # already points at a different commit.
+          if [ -n "$TAG" ]; then
+            EXISTING="$(git ls-remote --tags origin "refs/tags/${TAG}" | cut -f1)"
+            if [ -n "$EXISTING" ] && [ "$EXISTING" != "${GITHUB_SHA}" ]; then
+              echo "ERROR: tag ${TAG} already exists at ${EXISTING}, but this build is ${GITHUB_SHA}."
+              echo "Bump CONFIG_LOCALVERSION (-4k-behi-vX.Y) before pushing to main."
+              exit 1
+            fi
+          fi
 
       - name: Set up environment & sync AOSP toolchains
         run: |
@@ -317,9 +352,9 @@ jobs:
           done
           grep -q "^# CONFIG_MODULE_SIG_PROTECT is not set" "$KCONFIG" || {
             echo "ERROR: CONFIG_MODULE_SIG_PROTECT must stay disabled"; exit 1; }
-          grep -q '^CONFIG_LOCALVERSION="-4k-behi-v1.3"' "$KCONFIG" || {
-            echo "ERROR: CONFIG_LOCALVERSION must be -4k-behi-v1.3"; exit 1; }
-          echo "KSU/SYSVIPC/namespaces enabled; SIG_PROTECT off; LOCALVERSION=-4k-behi-v1.3"
+          grep -q "^CONFIG_LOCALVERSION=\"-4k-behi-v${VERSION}\"" "$KCONFIG" || {
+            echo "ERROR: CONFIG_LOCALVERSION must be -4k-behi-v${VERSION}"; exit 1; }
+          echo "KSU/SYSVIPC/namespaces enabled; SIG_PROTECT off; LOCALVERSION=-4k-behi-v${VERSION}"
 
           echo "=== Advanced feature sanity check ==="
           for opt in \
@@ -520,11 +555,11 @@ jobs:
           include-hidden-files: true
           compression-level: 6
 
-      - name: Publish GitHub release (draft)
-        if: success() && (startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != '')
+      - name: Publish GitHub release
+        if: success() && steps.meta.outputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          tag_name: ${{ steps.meta.outputs.tag }}
           # Create the tag on the exact commit that was built, not on the
           # repository default branch.
           target_commitish: ${{ github.sha }}
@@ -536,6 +571,7 @@ jobs:
             release/A145P-Kernel-v${{ steps.meta.outputs.version }}/RELEASE_NOTES.md
             release/A145P-Kernel-v${{ steps.meta.outputs.version }}/build-info.txt
             release/A145P-Kernel-v${{ steps.meta.outputs.version }}/SHA256SUMS
-          draft: true
+          draft: false
           prerelease: false
+          make_latest: true
           fail_on_unmatched_files: true
