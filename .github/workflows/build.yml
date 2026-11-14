@@ -7,13 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag (e.g. v1.0). Leave empty to only build an artifact.'
+        description: 'Release tag (e.g. v1.3). Leave empty to only build an artifact.'
         required: false
         default: ''
-      include_modules:
-        description: 'Include the freshly built kernel modules (.ko) in the package'
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -292,8 +288,6 @@ jobs:
           exit "${BUILD_RC}"
 
       - name: Package release
-        env:
-          INCLUDE_MODULES: ${{ inputs.include_modules }}
         run: |
           set -euo pipefail
           DIST="out/target/product/a14m/obj/KLEAF_OBJ/dist"
@@ -388,22 +382,7 @@ jobs:
           echo "Stock vermagic pinned: $STOCK_VERMAGIC"
 
           REL="release/A145P-Kernel-v${VERSION}"
-          mkdir -p "$REL/images"
-
-          cp -v "$IMAGE" "$REL/images/Image"
-          cp -v "$IMAGE_GZ" "$REL/images/Image.gz"
-          cp -v "$SYSTEM_MAP" "$REL/images/System.map"
-          cp -v "$KCONFIG" "$REL/images/.config"
-          cp -v "$KCONFIG" "$REL/images/config"
-
-          if [ "${INCLUDE_MODULES}" = "true" ]; then
-            mkdir -p "$REL/modules"
-            find "$DIST" -type f -name '*.ko' -print0 | while IFS= read -r -d '' ko; do
-              mkdir -p "$REL/modules/$(dirname "${ko#$DIST/}")"
-              cp -v "$ko" "$REL/modules/${ko#$DIST/}"
-            done
-            echo "Included $(find "$REL/modules" -name '*.ko' | wc -l) modules."
-          fi
+          mkdir -p "$REL"
 
           BOOT_IMG="$REL/A145P-Kernel-v${VERSION}-boot.img"
           MBOOTIMG="$GITHUB_WORKSPACE/.build-tools/mkbootimg/mkbootimg.py" \
@@ -431,31 +410,11 @@ jobs:
           )
           rm -rf "$ODIN_STAGE"
 
-          # KernelSU module
-          OUT_ZIP="$PWD/$REL/A145P-BatteryCare-v1.0.zip"
-          (
-            cd battery-care
-            ZIP_INPUTS="module.prop post-fs-data.sh service.sh uninstall.sh bin"
-            [ -f README.md ] && ZIP_INPUTS="$ZIP_INPUTS README.md"
-            zip -r -q "$OUT_ZIP" $ZIP_INPUTS
-          )
-          test -s "$OUT_ZIP"
-
-          # A145P Tuner KernelSU module
-          OUT_TUNER="$PWD/$REL/A145P-Tuner-v${VERSION}.zip"
-          (
-            cd a145p-tuner
-            ZIP_INPUTS="module.prop post-fs-data.sh service.sh uninstall.sh bin"
-            [ -f README.md ] && ZIP_INPUTS="$ZIP_INPUTS README.md"
-            zip -r -q "$OUT_TUNER" $ZIP_INPUTS
-          )
-          test -s "$OUT_TUNER"
-
           # Build info
           {
             echo "Kernel release : ${KERNEL_RELEASE}"
             echo "Package version: ${VERSION}"
-            echo "Variant        : behi v1.3 (a145p_advanced.config + A145P Tuner)"
+            echo "Variant        : behi ${VERSION} (a145p_advanced.config)"
             echo "Built at (UTC)  : $(date -u '+%Y-%m-%d %H:%M:%S')"
             echo "Source commit   : ${FULL_SHA}"
             echo "Source date     : $(date -u -d "@${SOURCE_DATE_EPOCH}" '+%Y-%m-%d %H:%M:%S') (SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH})"
@@ -467,7 +426,6 @@ jobs:
             echo "avbtool         : ${AVB_COMMIT}"
             echo "Boot partition  : ${BOOT_PARTITION_SIZE} bytes"
             echo "AVB signing key : AOSP testkey_rsa4096 (SHA256_RSA4096)"
-            echo "Modules included: ${INCLUDE_MODULES}"
             echo "Stock config    : configs/stock-a145pxxsddzh1.config"
           } | tee "$REL/build-info.txt"
 
@@ -482,9 +440,6 @@ jobs:
 
           - \`A145P-Kernel-v${VERSION}-boot.img\` — 32 MiB boot image (header v4, AVB test-key signed)
           - \`A145P-Kernel-v${VERSION}-Odin.tar.md5\` — Odin AP slot package containing \`boot.img\`
-          - \`images/Image\`, \`images/Image.gz\`, \`images/System.map\`, \`images/.config\`
-          - \`A145P-BatteryCare-v1.0.zip\` — KernelSU module for charge limiting (50–100 %)
-          - \`A145P-Tuner-v${VERSION}.zip\` — KernelSU module with balanced/performance/battery profiles
           - \`build-info.txt\`, \`SHA256SUMS\`
 
           ## Features
@@ -492,7 +447,6 @@ jobs:
           - KernelSU ${KSU_TAG} (version $((30000 + KSU_COMMITS)))
           - SYSVIPC / POSIX mqueue / IPC + PID + USER namespaces (Droidspaces-ready)
           - TMPFS POSIX ACL/XATTR, netfilter/ipset additions
-          - Battery Care support (Samsung \`batt_full_capacity\` interface)
           - CAKE qdisc, MACVLAN for containers (Droidspaces)
           - TTL/HL targets for tethering, cpu/checksum xtables helpers
           - SquashFS (XZ/LZ4/ZSTD), NFSv4.2, SMB/CIFS
@@ -533,32 +487,6 @@ jobs:
           > AOSP test key. With an unlocked bootloader this is accepted, exactly like the
           > previously working build.
 
-          ## Battery Care (KernelSU module)
-
-          Install \`A145P-BatteryCare-v1.0.zip\` from the KernelSU manager and reboot.
-          Default limit is **85 %**. Change it with:
-
-          \`\`\`sh
-          su -c "/data/adb/battery-care/battery-care status"
-          su -c "/data/adb/battery-care/battery-care on 80"
-          su -c "/data/adb/battery-care/battery-care off"
-          \`\`\`
-
-          ## A145P Tuner (KernelSU module)
-
-          Optional. Install \`A145P-Tuner-v${VERSION}.zip\` and reboot. The module
-          applies the \`balanced\` profile by default; switch profiles with:
-
-          \`\`\`sh
-          su -c "/data/adb/a145p-tuner/a145p-tuner status"
-          su -c "/data/adb/a145p-tuner/a145p-tuner profile battery"
-          su -c "/data/adb/a145p-tuner/a145p-tuner profile performance"
-          su -c "/data/adb/a145p-tuner/a145p-tuner profile balanced"
-          \`\`\`
-
-          All tunables are runtime-only and revert on reboot or module removal.
-          The module never changes thermal limits, voltages or CPU frequencies.
-
           ## Rollback
 
           Flash your previous working boot image / full stock firmware via Odin (AP + CSC, HOME_CSC to keep data).
@@ -571,8 +499,11 @@ jobs:
           - Verify with \`uname -r\` → \`${KERNEL_RELEASE}\`.
           EOF
 
-          ( cd "$REL" && find . -maxdepth 2 -type f ! -name 'SHA256SUMS' -print0 \
-              | sort -z | xargs -0 sha256sum > SHA256SUMS )
+          # Emit flat asset names (no ./ prefix) so the checksum file matches the
+          # files as they are published on the release page.
+          ( cd "$REL" && find . -maxdepth 1 -type f ! -name 'SHA256SUMS' -print0 \
+              | sort -z | xargs -0 sha256sum \
+              | sed -E 's#  \\./#  #' > SHA256SUMS )
 
           echo "=== Package contents ==="
           find "$REL" -maxdepth 2 -type f -printf '%10s  %p\n' | sort -k2
@@ -602,16 +533,9 @@ jobs:
           files: |
             release/A145P-Kernel-v${{ steps.meta.outputs.version }}/A145P-Kernel-v${{ steps.meta.outputs.version }}-boot.img
             release/A145P-Kernel-v${{ steps.meta.outputs.version }}/A145P-Kernel-v${{ steps.meta.outputs.version }}-Odin.tar.md5
-            release/A145P-Kernel-v${{ steps.meta.outputs.version }}/A145P-BatteryCare-v1.0.zip
-            release/A145P-Kernel-v${{ steps.meta.outputs.version }}/A145P-Tuner-v${{ steps.meta.outputs.version }}.zip
             release/A145P-Kernel-v${{ steps.meta.outputs.version }}/RELEASE_NOTES.md
             release/A145P-Kernel-v${{ steps.meta.outputs.version }}/build-info.txt
             release/A145P-Kernel-v${{ steps.meta.outputs.version }}/SHA256SUMS
-            release/A145P-Kernel-v${{ steps.meta.outputs.version }}/images/Image
-            release/A145P-Kernel-v${{ steps.meta.outputs.version }}/images/Image.gz
-            release/A145P-Kernel-v${{ steps.meta.outputs.version }}/images/System.map
-            release/A145P-Kernel-v${{ steps.meta.outputs.version }}/images/.config
-            release/A145P-Kernel-v${{ steps.meta.outputs.version }}/images/config
           draft: true
           prerelease: false
           fail_on_unmatched_files: true
