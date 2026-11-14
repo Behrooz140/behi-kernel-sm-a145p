@@ -5,7 +5,7 @@
 ![kernel](https://img.shields.io/badge/kernel-6.6.92-blue)
 ![device](https://img.shields.io/badge/device-SM--A145P-green)
 ![KernelSU](https://img.shields.io/badge/KernelSU-v3.3.1-orange)
-![release](https://img.shields.io/github/v/release/Behrooz140/GalaxyA145Pkernel?label=release)
+![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-a14?label=release)
 
 یک کرنل شخصی‌سازی‌شدهٔ GKI اندروید ۱۵ (لینوکس 6.6.92) برای سامسونگ Galaxy A14 4G
 (`a14m`، مدیاتک Helio G80 / MT6769V) که برای KernelSU و کارهای کانتینری مثل
