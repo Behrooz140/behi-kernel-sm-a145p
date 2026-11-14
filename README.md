@@ -21,7 +21,7 @@ The release is a **single boot image**. There are no KernelSU modules, no
 done.
 
 Current release: **v1.3** —
-`6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.3`
+`6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4`
 
 ---
 
@@ -54,7 +54,7 @@ Current release: **v1.3** —
 | CPU | 2 × Cortex-A75 + 6 × Cortex-A55 |
 | Kernel | 6.6.92 GKI, `android15-6.6` |
 | Base firmware | `A145PXXSDDZH1` |
-| Kernel release string | `6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.3` |
+| Kernel release string | `6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4` |
 | Boot image | 32 MiB, header v4, AVB hash footer (`SHA256_RSA4096`, AOSP test key) |
 | Build variant | KernelSU `v3.3.1` (version `32680`), user build |
 
@@ -86,13 +86,22 @@ compiled into the kernel itself.
   namespaces (Droidspaces-ready), TMPFS POSIX ACL and extended attributes.
 - **Networking**: CAKE qdisc (SQM / low latency), MACVLAN for containers, TTL/HL
   targets for tethering, `xt_cpu` and `xt_CHECKSUM`, ipset, common netfilter
-  matches/targets.
+  matches/targets, and IPv6 NAT/masquerade for `--net=nat` containers.
+- **Container resource limits**: cgroup v2 `cpu.max` (CFS bandwidth) and
+  `pids.max`, so Droidspaces `--cpus` and `--pids-limit` are enforced instead of
+  being skipped.
 - **Storage / network filesystems**: SquashFS with XZ, LZ4 and ZSTD; NFSv4.2; SMB/CIFS.
 - **Hardening**: kernel stack offset randomization.
 - **ABI guard in CI**: exported symbol CRCs are compared against the known-good
   v1.0 baseline on every build, so a kernel that would reject stock vendor
   modules cannot be released.
 - **Stock CPU clocks** — no overclock, no voltage changes (see below).
+
+v1.4 specifically closes the last gaps reported by the Droidspaces v7.2.0
+requirements check: IPv6 NAT (`CONFIG_IP6_NF_NAT`,
+`CONFIG_IP6_NF_TARGET_MASQUERADE`), CPU limits (`CONFIG_CFS_BANDWIDTH`) and
+process limits (`CONFIG_CGROUP_PIDS`). All MUST HAVE, RECOMMENDED and OPTIONAL
+items should then be reported as available.
 
 ## Requirements
 
@@ -125,7 +134,7 @@ flashing can take a few minutes.
 
 ```sh
 adb shell uname -r
-# 6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.3
+# 6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4
 ```
 
 With root:

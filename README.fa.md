@@ -20,7 +20,7 @@
 `vendor_dlkm` و هیچ نصب داخلی اندروید ندارد: `boot` را فلش می‌کنی، ریبوت، تمام.
 
 نسخهٔ فعلی: **v1.3** —
-`6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.3`
+`6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4`
 
 ---
 
@@ -53,7 +53,7 @@
 | پردازنده | ۲ × Cortex-A75 + ۶ × Cortex-A55 |
 | کرنل | 6.6.92 GKI، `android15-6.6` |
 | فریمور پایه | `A145PXXSDDZH1` |
-| رشتهٔ نسخهٔ کرنل | `6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.3` |
+| رشتهٔ نسخهٔ کرنل | `6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4` |
 | boot image | ۳۲ مگابایت، هدر v4، فوتر AVB (`SHA256_RSA4096`، کلید تست AOSP) |
 | نوع بیلد | KernelSU `v3.3.1` (نسخهٔ `32680`)، بیلد user |
 
@@ -84,12 +84,22 @@ KernelSU داخل خود کرنل کامپایل شده است.
 - **namespaceها برای کانتینر**: SYSVIPC، صف پیام POSIX، namespaceهای IPC/PID/USER
   (سازگار با Droidspaces)، ACL و xattr روی TMPFS.
 - **شبکه**: qdisc CAKE (برای SQM و تأخیر کم)، MACVLAN برای کانتینرها، تارگت‌های
-  TTL/HL برای tethering، `xt_cpu` و `xt_CHECKSUM`، ipset و match/targetهای رایج netfilter.
+  TTL/HL برای tethering، `xt_cpu` و `xt_CHECKSUM`، ipset و match/targetهای رایج
+  netfilter، و NAT/masquerade روی IPv6 برای کانتینرهای `--net=nat`.
+- **محدودیت منابع کانتینر**: `cpu.max` (CFS bandwidth) و `pids.max` در cgroup v2،
+  بنابراین `--cpus` و `--pids-limit` در Droidspaces واقعاً اعمال می‌شوند و skip
+  نمی‌شوند.
 - **فایل‌سیستم‌ها**: SquashFS با XZ/LZ4/ZSTD، NFSv4.2، SMB/CIFS.
 - **امنیت/سخت‌سازی**: تصادفی‌سازی آفست استک کرنل.
 - **گیت ABI در CI**: CRC نمادهای صادرشده در هر بیلد با نسخهٔ سالم v1.0 مقایسه می‌شود؛
   کرنلی که ماژول‌های استوک vendor را رد کند اصلاً منتشر نمی‌شود.
 - **فرکانس‌های استوک CPU** — بدون اورکلاک و بدون تغییر ولتاژ (پایین‌تر توضیح داده شده).
+
+نسخهٔ v1.4 دقیقاً آخرین کمبودهای گزارش‌شده توسط بررسی پیش‌نیازهای Droidspaces
+v7.2.0 را پوشش می‌دهد: IPv6 NAT (`CONFIG_IP6_NF_NAT`،
+`CONFIG_IP6_NF_TARGET_MASQUERADE`)، محدودیت CPU (`CONFIG_CFS_BANDWIDTH`) و
+محدودیت تعداد پردازه (`CONFIG_CGROUP_PIDS`). بعد از آن باید همهٔ آیتم‌های MUST HAVE،
+RECOMMENDED و OPTIONAL با ✓ گزارش شوند.
 
 ## پیش‌نیازها
 
@@ -121,7 +131,7 @@ KernelSU داخل خود کرنل کامپایل شده است.
 
 ```sh
 adb shell uname -r
-# 6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.3
+# 6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4
 ```
 
 با روت:
