@@ -1,15 +1,20 @@
-# behi kernel — Samsung Galaxy A14 4G (SM-A145P)
+# behi kernel — Samsung Galaxy A14 4G (SM-A145P / `a14m`)
 
 **English** | [فارسی](README.fa.md)
 
 ![kernel](https://img.shields.io/badge/kernel-6.6.92-blue)
 ![device](https://img.shields.io/badge/device-SM--A145P-green)
 ![KernelSU](https://img.shields.io/badge/KernelSU-v3.3.1-orange)
-![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-a14?label=release)
+![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-sm-a145p?label=release)
 
-A personalised Android 15 GKI kernel (Linux 6.6.92) for the Samsung Galaxy A14 4G
-(`a14m`, MediaTek Helio G80 / MT6769V), built for KernelSU and container
-workloads such as Droidspaces.
+A personalised Android 15 GKI kernel (Linux 6.6.92) for the **Samsung Galaxy A14 4G,
+exact model SM-A145P** (`a14m`, MediaTek Helio G80 / MT6769V), built for KernelSU
+and container workloads such as Droidspaces.
+
+> **Only for SM-A145P.** The Galaxy A14 family has several variants — SM-A145F,
+> SM-A145R, SM-A146B, SM-A146P/U and others — with different firmware and module
+> ABIs. This kernel is built and verified for SM-A145P only; flashing it on any
+> other variant can leave the device unbootable.
 
 The release is a **single boot image**. There are no KernelSU modules, no
 `vendor_dlkm` changes and nothing to install inside Android: flash `boot`, reboot,

@@ -1,15 +1,20 @@
-# کرنل behi — سامسونگ Galaxy A14 4G (SM-A145P)
+# کرنل behi — سامسونگ Galaxy A14 4G (SM-A145P / `a14m`)
 
 [English](README.md) | **فارسی**
 
 ![kernel](https://img.shields.io/badge/kernel-6.6.92-blue)
 ![device](https://img.shields.io/badge/device-SM--A145P-green)
 ![KernelSU](https://img.shields.io/badge/KernelSU-v3.3.1-orange)
-![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-a14?label=release)
+![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-sm-a145p?label=release)
 
-یک کرنل شخصی‌سازی‌شدهٔ GKI اندروید ۱۵ (لینوکس 6.6.92) برای سامسونگ Galaxy A14 4G
-(`a14m`، مدیاتک Helio G80 / MT6769V) که برای KernelSU و کارهای کانتینری مثل
-Droidspaces ساخته شده است.
+یک کرنل شخصی‌سازی‌شدهٔ GKI اندروید ۱۵ (لینوکس 6.6.92) برای **سامسونگ Galaxy A14 4G،
+مدل دقیق SM-A145P** (`a14m`، مدیاتک Helio G80 / MT6769V) که برای KernelSU و کارهای
+کانتینری مثل Droidspaces ساخته شده است.
+
+> **فقط برای SM-A145P.** خانوادهٔ Galaxy A14 چند نسخه دارد — SM-A145F، SM-A145R،
+> SM-A146B، SM-A146P/U و دیگران — با فریمور و ABI ماژول متفاوت. این کرنل فقط برای
+> SM-A145P ساخته و تست شده است؛ فلش آن روی هر نسخهٔ دیگر می‌تواند دستگاه را
+> غیرقابل‌بوت کند.
 
 بستهٔ انتشار **فقط یک boot image** است. هیچ ماژول KernelSU، هیچ تغییری در
 `vendor_dlkm` و هیچ نصب داخلی اندروید ندارد: `boot` را فلش می‌کنی، ریبوت، تمام.
