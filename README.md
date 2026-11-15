@@ -20,7 +20,7 @@ The release is a **single boot image**. There are no KernelSU modules, no
 `vendor_dlkm` changes and nothing to install inside Android: flash `boot`, reboot,
 done.
 
-Current release: **v1.3** —
+Current release: **v1.4** —
 `6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4`
 
 ---
@@ -87,9 +87,6 @@ compiled into the kernel itself.
 - **Networking**: CAKE qdisc (SQM / low latency), MACVLAN for containers, TTL/HL
   targets for tethering, `xt_cpu` and `xt_CHECKSUM`, ipset, common netfilter
   matches/targets, and IPv6 NAT/masquerade for `--net=nat` containers.
-- **Container resource limits**: cgroup v2 `cpu.max` (CFS bandwidth) and
-  `pids.max`, so Droidspaces `--cpus` and `--pids-limit` are enforced instead of
-  being skipped.
 - **Storage / network filesystems**: SquashFS with XZ, LZ4 and ZSTD; NFSv4.2; SMB/CIFS.
 - **Hardening**: kernel stack offset randomization.
 - **ABI guard in CI**: exported symbol CRCs are compared against the known-good
@@ -97,11 +94,13 @@ compiled into the kernel itself.
   modules cannot be released.
 - **Stock CPU clocks** — no overclock, no voltage changes (see below).
 
-v1.4 specifically closes the last gaps reported by the Droidspaces v7.2.0
-requirements check: IPv6 NAT (`CONFIG_IP6_NF_NAT`,
-`CONFIG_IP6_NF_TARGET_MASQUERADE`), CPU limits (`CONFIG_CFS_BANDWIDTH`) and
-process limits (`CONFIG_CGROUP_PIDS`). All MUST HAVE, RECOMMENDED and OPTIONAL
-items should then be reported as available.
+v1.4 adds IPv6 NAT (`CONFIG_IP6_NF_NAT`,
+`CONFIG_IP6_NF_TARGET_MASQUERADE`) to the Droidspaces feature set: `--net=nat`
+containers now get NAT over IPv6 as well as IPv4. The remaining two optional
+items, `--cpus` (cgroup v2 `cpu.max`, needs `CONFIG_CFS_BANDWIDTH`) and
+`--pids-limit` (`pids.max`, needs `CONFIG_CGROUP_PIDS`), **cannot be enabled**
+without breaking the stock `/vendor` module ABI; Droidspaces simply skips them.
+See the ABI section below for the exact reason.
 
 ## Requirements
 
@@ -192,9 +191,26 @@ This project therefore:
 - keeps the release string base identical to stock
   (`6.6.92-android15-8-abA145PXXSDDZH1-4k`) and only appends `-behi-vX.Y`;
 - refuses to enable ABI-breaking options (`NF_TABLES*`, `KSM`, `VXLAN`, `IPVLAN`,
-  `NF_CONNTRACK_LABELS`, `LRU_GEN`, …);
+  `NF_CONNTRACK_LABELS`, `LRU_GEN`, `CFS_BANDWIDTH`, `CGROUP_PIDS`, …);
 - runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.0.txt` on every
   build and fails if any exported CRC differs or disappears.
+
+### Why `--cpus` and `--pids-limit` are not supported
+
+Both need cgroup v2 controllers that change structures visible to exported GKI
+symbols:
+
+- `CONFIG_CFS_BANDWIDTH` adds fields to `struct rq` / `struct cfs_rq`
+  (`kernel/sched/sched.h`), so the CRCs of the exported `set_next_entity` and
+  `update_misfit_status` change.
+- `CONFIG_CGROUP_PIDS` adds `pids_cgrp_id` to `enum cgroup_subsys_id`, which
+  increments `CGROUP_SUBSYS_COUNT`; the `struct css_set` arrays embedded in
+  `struct task_struct` grow, which changed **5853** exported CRCs when it was
+  tried in v1.4.
+
+Neither option can be enabled without risking the stock `/vendor` modules, so
+the CI gate rejects them and Droidspaces skips the corresponding flags. IPv6 NAT
+does not touch any exported structure and is safe.
 
 `CONFIG_MODULE_SIG_PROTECT` is intentionally disabled, matching the behaviour of
 the stock vendor build.

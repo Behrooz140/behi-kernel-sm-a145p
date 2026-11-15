@@ -19,7 +19,7 @@
 بستهٔ انتشار **فقط یک boot image** است. هیچ ماژول KernelSU، هیچ تغییری در
 `vendor_dlkm` و هیچ نصب داخلی اندروید ندارد: `boot` را فلش می‌کنی، ریبوت، تمام.
 
-نسخهٔ فعلی: **v1.3** —
+نسخهٔ فعلی: **v1.4** —
 `6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4`
 
 ---
@@ -86,20 +86,19 @@ KernelSU داخل خود کرنل کامپایل شده است.
 - **شبکه**: qdisc CAKE (برای SQM و تأخیر کم)، MACVLAN برای کانتینرها، تارگت‌های
   TTL/HL برای tethering، `xt_cpu` و `xt_CHECKSUM`، ipset و match/targetهای رایج
   netfilter، و NAT/masquerade روی IPv6 برای کانتینرهای `--net=nat`.
-- **محدودیت منابع کانتینر**: `cpu.max` (CFS bandwidth) و `pids.max` در cgroup v2،
-  بنابراین `--cpus` و `--pids-limit` در Droidspaces واقعاً اعمال می‌شوند و skip
-  نمی‌شوند.
 - **فایل‌سیستم‌ها**: SquashFS با XZ/LZ4/ZSTD، NFSv4.2، SMB/CIFS.
 - **امنیت/سخت‌سازی**: تصادفی‌سازی آفست استک کرنل.
 - **گیت ABI در CI**: CRC نمادهای صادرشده در هر بیلد با نسخهٔ سالم v1.0 مقایسه می‌شود؛
   کرنلی که ماژول‌های استوک vendor را رد کند اصلاً منتشر نمی‌شود.
 - **فرکانس‌های استوک CPU** — بدون اورکلاک و بدون تغییر ولتاژ (پایین‌تر توضیح داده شده).
 
-نسخهٔ v1.4 دقیقاً آخرین کمبودهای گزارش‌شده توسط بررسی پیش‌نیازهای Droidspaces
-v7.2.0 را پوشش می‌دهد: IPv6 NAT (`CONFIG_IP6_NF_NAT`،
-`CONFIG_IP6_NF_TARGET_MASQUERADE`)، محدودیت CPU (`CONFIG_CFS_BANDWIDTH`) و
-محدودیت تعداد پردازه (`CONFIG_CGROUP_PIDS`). بعد از آن باید همهٔ آیتم‌های MUST HAVE،
-RECOMMENDED و OPTIONAL با ✓ گزارش شوند.
+نسخهٔ v1.4 قابلیت IPv6 NAT (`CONFIG_IP6_NF_NAT`،
+`CONFIG_IP6_NF_TARGET_MASQUERADE`) را به مجموعهٔ Droidspaces اضافه می‌کند؛ حالا
+کانتینرهای `--net=nat` علاوه بر IPv4 روی IPv6 هم NAT می‌گیرند. دو آیتم اختیاری
+باقی‌مانده یعنی `--cpus` (نیازمند `CONFIG_CFS_BANDWIDTH` برای `cpu.max`) و
+`--pids-limit` (نیازمند `CONFIG_CGROUP_PIDS` برای `pids.max`) **قابل فعال‌سازی
+نیستند**، چون ABI ماژول‌های استوک `/vendor` را می‌شکنند؛ Droidspaces این دو را
+به‌سادگی skip می‌کند. دلیل دقیق در بخش ABI پایین‌تر آمده است.
 
 ## پیش‌نیازها
 
@@ -188,9 +187,26 @@ su -c 'lsmod | wc -l; lsmod | head'
 - پایهٔ رشتهٔ نسخه را مثل استوک نگه می‌دارد
   (`6.6.92-android15-8-abA145PXXSDDZH1-4k`) و فقط `-behi-vX.Y` را اضافه می‌کند؛
 - گزینه‌های شکنندهٔ ABI را فعال نمی‌کند (`NF_TABLES*`، `KSM`، `VXLAN`، `IPVLAN`،
-  `NF_CONNTRACK_LABELS`، `LRU_GEN` و…)؛
+  `NF_CONNTRACK_LABELS`، `LRU_GEN`، `CFS_BANDWIDTH`، `CGROUP_PIDS` و…)؛
 - در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.0.txt` اجرا
   می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود.
+
+### چرا `--cpus` و `--pids-limit` پشتیبانی نمی‌شوند
+
+هر دو به کنترلرهای cgroup v2 نیاز دارند که ساختارهای دیده‌شده توسط نمادهای
+صادرشدهٔ GKI را عوض می‌کنند:
+
+- `CONFIG_CFS_BANDWIDTH` فیلدهایی به `struct rq` و `struct cfs_rq` در
+  `kernel/sched/sched.h` اضافه می‌کند و در نتیجه CRC نمادهای صادرشدهٔ
+  `set_next_entity` و `update_misfit_status` عوض می‌شود.
+- `CONFIG_CGROUP_PIDS` مقدار `pids_cgrp_id` را به `enum cgroup_subsys_id` اضافه
+  می‌کند، `CGROUP_SUBSYS_COUNT` یکی زیاد می‌شود، آرایه‌های `struct css_set` داخل
+  `struct task_struct` بزرگ می‌شوند و در تلاش v1.4 باعث تغییر **۵۸۵۳** CRC
+  صادرشده شد.
+
+هیچ‌کدام را نمی‌شود بدون به‌خطر انداختن ماژول‌های استوک `/vendor` فعال کرد؛ گیت CI
+هم آن‌ها را رد می‌کند و Droidspaces پرچم‌های مربوط را skip می‌کند. در مقابل، IPv6 NAT
+هیچ ساختار صادرشده‌ای را دست نمی‌زند و امن است.
 
 `CONFIG_MODULE_SIG_PROTECT` عمداً غیرفعال است، مطابق رفتار بیلد استوک vendor.
 
