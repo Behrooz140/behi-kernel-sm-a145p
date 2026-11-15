@@ -482,7 +482,10 @@ jobs:
           - SYSVIPC / POSIX mqueue / IPC + PID + USER namespaces (Droidspaces-ready)
           - TMPFS POSIX ACL/XATTR, netfilter/ipset additions
           - CAKE qdisc, MACVLAN for containers (Droidspaces)
-          - IPv6 NAT/masquerade for `--net=nat` containers (Droidspaces)
+          - IPv6 NAT/masquerade for \`--net=nat\` containers (Droidspaces)
+          - Note: \`--cpus\` and \`--pids-limit\` remain unsupported on purpose; the
+            cgroup controllers they need would break the stock \`/vendor\` module
+            ABI, so Droidspaces skips those two flags
           - TTL/HL targets for tethering, cpu/checksum xtables helpers
           - SquashFS (XZ/LZ4/ZSTD), NFSv4.2, SMB/CIFS
           - USB serial core kept as a module exactly like the stock firmware
