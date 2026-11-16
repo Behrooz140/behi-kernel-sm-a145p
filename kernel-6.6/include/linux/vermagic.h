@@ -56,7 +56,7 @@
  * keeps the exported symbol CRCs identical to v1.0.
  */
 #define A145P_STOCK_VERMAGIC \
-	"6.6.92-android15-8-abA145PXXSDDZH1-4k SMP preempt mod_unload modversions aarch64"
+	"6.6.118-android15-8-abA145PXXUEDZJ2-4k SMP preempt mod_unload modversions aarch64"
 
 #define VERMAGIC_STRING A145P_STOCK_VERMAGIC
 

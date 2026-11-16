@@ -1053,6 +1053,11 @@ static int usbhid_parse(struct hid_device *hid)
 			"%u unsupported optional hid class descriptors\n",
 			(int)(hdesc->bNumDescriptors - 1));
 
+	if (hdesc->bNumDescriptors > 1)
+		hid_warn(intf,
+			"%u unsupported optional hid class descriptors\n",
+			(int)(hdesc->bNumDescriptors - 1));
+
 	hid->quirks |= quirks;
 
 	return 0;
