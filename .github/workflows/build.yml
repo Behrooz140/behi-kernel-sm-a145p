@@ -4,12 +4,20 @@ on:
   push:
     branches:
       - main
+      # Test branches: build an artifact so the image can be validated on the
+      # device first. Only main (or an explicit dispatch) publishes a release.
+      - 'bump/**'
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag (e.g. v1.4). Leave empty to derive it from CONFIG_LOCALVERSION.'
+        description: 'Release tag (e.g. v1.5). Leave empty to derive it from CONFIG_LOCALVERSION.'
         required: false
         default: ''
+      publish_release:
+        description: 'Publish a GitHub release. Leave off for a test build (artifact only).'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -65,17 +73,21 @@ jobs:
 
           VERSION=""
           TAG=""
+          PUBLISH="false"
           if [ -n "${{ inputs.release_tag }}" ]; then
             REQ="${{ inputs.release_tag }}"
             REQ="${REQ#v}"
             TAG="v${REQ}"
             VERSION="${REQ}"
+            PUBLISH="true"
           elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG="${GITHUB_REF_NAME}"
             VERSION="${TAG#v}"
-          elif [ "${GITHUB_REF}" = "refs/heads/main" ]; then
-            # The version is the one baked into CONFIG_LOCALVERSION, so a
-            # kernel update plus a version bump is all that a release needs.
+            PUBLISH="true"
+          else
+            # Branch build (main, or a bump/* test branch). The version is the
+            # one baked into CONFIG_LOCALVERSION, so a kernel update plus a
+            # version bump is all a release needs.
             VERSION="$(sed -n 's/^CONFIG_LOCALVERSION="-4k-behi-v\([^"]*\)"$/\1/p' \
               kernel-6.6/arch/arm64/configs/gki_defconfig | head -n1)"
             if [ -z "$VERSION" ]; then
@@ -84,22 +96,31 @@ jobs:
               exit 1
             fi
             TAG="v${VERSION}"
-          else
-            VERSION="0.0.0-${SHORT_SHA}"
+            # Only main publishes automatically. Other branches (and manual
+            # dispatches without publish_release) build a test artifact only,
+            # so the image can be validated on the device before release.
+            if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+              PUBLISH="true"
+            elif [ "${{ inputs.publish_release }}" = "true" ]; then
+              PUBLISH="true"
+            fi
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "PUBLISH=$PUBLISH" >> "$GITHUB_ENV"
           echo "BRAND_SUFFIX=-behi-v${VERSION}" >> "$GITHUB_ENV"
           echo "EXPECTED_KERNEL_RELEASE=${KERNEL_BASE_RELEASE}-behi-v${VERSION}" >> "$GITHUB_ENV"
           # Expose the values as step outputs too: the expression env context
           # is not reliably populated from GITHUB_ENV.
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Building version: ${VERSION} (tag: ${TAG:-none})"
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "Building version: ${VERSION} (tag: ${TAG:-none}, publish: ${PUBLISH})"
 
           # One release per version. Refuse to silently overwrite a tag that
-          # already points at a different commit.
-          if [ -n "$TAG" ]; then
+          # already points at a different commit. Only relevant when actually
+          # publishing; test builds never touch tags.
+          if [ "${PUBLISH}" = "true" ] && [ -n "$TAG" ]; then
             EXISTING="$(git ls-remote --tags origin "refs/tags/${TAG}" | cut -f1)"
             if [ -n "$EXISTING" ] && [ "$EXISTING" != "${GITHUB_SHA}" ]; then
               echo "ERROR: tag ${TAG} already exists at ${EXISTING}, but this build is ${GITHUB_SHA}."
@@ -559,7 +580,7 @@ jobs:
           compression-level: 6
 
       - name: Publish GitHub release
-        if: success() && steps.meta.outputs.tag != ''
+        if: success() && steps.meta.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
