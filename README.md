@@ -196,8 +196,11 @@ This project therefore:
   (`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) and only appends `-behi-vX.Y`;
 - refuses to enable ABI-breaking options (`NF_TABLES*`, `KSM`, `VXLAN`, `IPVLAN`,
   `NF_CONNTRACK_LABELS`, `LRU_GEN`, `CFS_BANDWIDTH`, `CGROUP_PIDS`, …);
-- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.0.txt` on every
-  build and fails if any exported CRC differs or disappears.
+- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.5.txt` on every
+  build and fails if any exported CRC differs or disappears. The v1.5 baseline
+  is the v1.0 one with the ACK 6.6.92 -> 6.6.118 delta's non-ABI changes
+  pre-applied (the five removed vendor hooks and the four symbols whose
+  signature changed); none of them is part of the GKI ABI.
 
 ### Why `--cpus` and `--pids-limit` are not supported
 
@@ -302,7 +305,7 @@ then an AVB hash footer sized to the 32 MiB `boot` partition.
 | `.github/workflows/build.yml` | Full CI: toolchain, patches, KernelSU, config gates, build, packaging, release |
 | `kernel/` | Device kernel modules tree (`kernel_device_modules-6.6`) and the Kleaf/Bazel build entrypoint |
 | `kernel-6.6/` | GKI kernel source (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.0.txt` | Known-good exported symbol CRC baseline |
+| `configs/kmi-baseline-v1.5.txt` | Known-good exported symbol CRC baseline (v1.0 adjusted for the 6.6.118 delta) |
 | `configs/stock-a145pxxuedzj2.config` | Reference stock configuration |
 | `scripts/kmi_check.py` | ABI gate used by CI |
 | `scripts/build_boot_image.sh` | 32 MiB boot image + AVB footer builder |
