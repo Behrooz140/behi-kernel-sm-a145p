@@ -4,7 +4,12 @@ ifneq ($(CONFIG_DEVICE_MODULES_ALLOW_BUILTIN),y)
 
 LINUXINCLUDE := $(DEVCIE_MODULES_INCLUDE) $(LINUXINCLUDE)
 
-subdir-ccflags-y += -Wall -Werror \
+# The GKI 6.6.118 headers add MIN()/MAX() to <linux/minmax.h>; several MTK
+# device-module sources define their own (compatible) MIN/MAX.  The vendor
+# definition still wins where it is included after minmax.h, so the
+# redefinition is harmless -- silence clang's -Wmacro-redefined (promoted to
+# an error by -Werror below) instead of patching every vendor file.
+subdir-ccflags-y += -Wall -Werror -Wno-macro-redefined \
 		-I$(srctree)/$(src)/include \
 		-I$(srctree)/$(src)/include/uapi \
 
