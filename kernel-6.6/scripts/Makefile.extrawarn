@@ -8,6 +8,12 @@
 
 # Default set of warnings, always enabled
 KBUILD_CFLAGS += -Wall
+# GKI 6.6.118 adds MIN()/MAX() to <linux/minmax.h>; many MTK vendor and
+# device-module sources define their own compatible MIN/MAX before that header
+# is pulled in.  The redefinition is harmless (the local definition is what
+# gets used), so keep CONFIG_WERROR from turning clang's default
+# -Wmacro-redefined into a hard build failure.
+KBUILD_CFLAGS += -Wno-macro-redefined
 KBUILD_CFLAGS += -Wundef
 KBUILD_CFLAGS += -Werror=implicit-function-declaration
 KBUILD_CFLAGS += -Werror=implicit-int
