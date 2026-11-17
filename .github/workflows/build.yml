@@ -4,12 +4,20 @@ on:
   push:
     branches:
       - main
+      # Test branches: build an artifact so the image can be validated on the
+      # device first. Only main (or an explicit dispatch) publishes a release.
+      - 'bump/**'
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag (e.g. v1.4). Leave empty to derive it from CONFIG_LOCALVERSION.'
+        description: 'Release tag (e.g. v1.5). Leave empty to derive it from CONFIG_LOCALVERSION.'
         required: false
         default: ''
+      publish_release:
+        description: 'Publish a GitHub release. Leave off for a test build (artifact only).'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -21,7 +29,7 @@ env:
   # Base firmware release must stay identical to stock so the vermagic stamp
   # matches the prebuilt /vendor modules. The user-visible release string adds
   # the "behi" branding and the package version at the end:
-  # 6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.3
+  # 6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5
   #
   # Cutting a new release (every kernel update):
   #   1. bump CONFIG_LOCALVERSION ("-4k-behi-vX.Y") in
@@ -29,9 +37,9 @@ env:
   #      kernel/kernel_device_modules-6.6/arch/arm64/configs/a14m_defconfig
   #   2. push/merge to main: the workflow derives the tag from that value,
   #      builds and publishes the GitHub release automatically.
-  BUILD_NUMBER: A145PXXSDDZH1
-  KERNEL_BASE_RELEASE: 6.6.92-android15-8-abA145PXXSDDZH1-4k
-  STOCK_VERMAGIC: '6.6.92-android15-8-abA145PXXSDDZH1-4k SMP preempt mod_unload modversions aarch64'
+  BUILD_NUMBER: A145PXXUEDZJ2
+  KERNEL_BASE_RELEASE: 6.6.118-android15-8-abA145PXXUEDZJ2-4k
+  STOCK_VERMAGIC: '6.6.118-android15-8-abA145PXXUEDZJ2-4k SMP preempt mod_unload modversions aarch64'
   KSU_TAG: v3.3.1
   KSU_COMMIT: 0c0fdb960178fa12d80d6cbcfdcb6ad8be6a865d
   KSU_COMMITS: '2680'
@@ -65,17 +73,21 @@ jobs:
 
           VERSION=""
           TAG=""
+          PUBLISH="false"
           if [ -n "${{ inputs.release_tag }}" ]; then
             REQ="${{ inputs.release_tag }}"
             REQ="${REQ#v}"
             TAG="v${REQ}"
             VERSION="${REQ}"
+            PUBLISH="true"
           elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG="${GITHUB_REF_NAME}"
             VERSION="${TAG#v}"
-          elif [ "${GITHUB_REF}" = "refs/heads/main" ]; then
-            # The version is the one baked into CONFIG_LOCALVERSION, so a
-            # kernel update plus a version bump is all that a release needs.
+            PUBLISH="true"
+          else
+            # Branch build (main, or a bump/* test branch). The version is the
+            # one baked into CONFIG_LOCALVERSION, so a kernel update plus a
+            # version bump is all a release needs.
             VERSION="$(sed -n 's/^CONFIG_LOCALVERSION="-4k-behi-v\([^"]*\)"$/\1/p' \
               kernel-6.6/arch/arm64/configs/gki_defconfig | head -n1)"
             if [ -z "$VERSION" ]; then
@@ -84,22 +96,31 @@ jobs:
               exit 1
             fi
             TAG="v${VERSION}"
-          else
-            VERSION="0.0.0-${SHORT_SHA}"
+            # Only main publishes automatically. Other branches (and manual
+            # dispatches without publish_release) build a test artifact only,
+            # so the image can be validated on the device before release.
+            if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+              PUBLISH="true"
+            elif [ "${{ inputs.publish_release }}" = "true" ]; then
+              PUBLISH="true"
+            fi
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "PUBLISH=$PUBLISH" >> "$GITHUB_ENV"
           echo "BRAND_SUFFIX=-behi-v${VERSION}" >> "$GITHUB_ENV"
           echo "EXPECTED_KERNEL_RELEASE=${KERNEL_BASE_RELEASE}-behi-v${VERSION}" >> "$GITHUB_ENV"
           # Expose the values as step outputs too: the expression env context
           # is not reliably populated from GITHUB_ENV.
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Building version: ${VERSION} (tag: ${TAG:-none})"
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "Building version: ${VERSION} (tag: ${TAG:-none}, publish: ${PUBLISH})"
 
           # One release per version. Refuse to silently overwrite a tag that
-          # already points at a different commit.
-          if [ -n "$TAG" ]; then
+          # already points at a different commit. Only relevant when actually
+          # publishing; test builds never touch tags.
+          if [ "${PUBLISH}" = "true" ] && [ -n "$TAG" ]; then
             EXISTING="$(git ls-remote --tags origin "refs/tags/${TAG}" | cut -f1)"
             if [ -n "$EXISTING" ] && [ "$EXISTING" != "${GITHUB_SHA}" ]; then
               echo "ERROR: tag ${TAG} already exists at ${EXISTING}, but this build is ${GITHUB_SHA}."
@@ -391,7 +412,7 @@ jobs:
           python3 scripts/kmi_check.py verify \
             --image "$IMAGE" \
             --system-map "$SYSTEM_MAP" \
-            --baseline configs/kmi-baseline-v1.0.txt
+            --baseline configs/kmi-baseline-v1.5.txt
 
           KERNEL_RELEASE="$(strings "$IMAGE" | sed -n 's/^Linux version \([^ ]*\) .*/\1/p' | head -n1)"
           echo "Detected kernel release: $KERNEL_RELEASE"
@@ -460,14 +481,14 @@ jobs:
             echo "avbtool         : ${AVB_COMMIT}"
             echo "Boot partition  : ${BOOT_PARTITION_SIZE} bytes"
             echo "AVB signing key : AOSP testkey_rsa4096 (SHA256_RSA4096)"
-            echo "Stock config    : configs/stock-a145pxxsddzh1.config"
+            echo "Stock config    : configs/stock-a145pxxuedzj2.config"
           } | tee "$REL/build-info.txt"
 
           cat > "$REL/RELEASE_NOTES.md" <<EOF
           # Galaxy A14 (SM-A145P) behi custom kernel ${VERSION}
 
           Kernel release: \`${KERNEL_RELEASE}\`
-          Base firmware: \`A145PXXSDDZH1\`
+          Base firmware: \`A145PXXUEDZJ2\`
           Built from commit: \`${FULL_SHA}\`
 
           ## Contents
@@ -491,7 +512,9 @@ jobs:
           - USB serial core kept as a module exactly like the stock firmware
             (no \`.ko\` files are shipped, so USB-serial adapters need a module build)
           - Kernel stack offset randomization
-          - ABI guard: exported symbol CRCs are compared with v1.0 on every build
+          - ABI guard: exported symbol CRCs are compared with a known-good
+            baseline on every build (v1.5 = v1.0 adjusted for the 6.6.118 ACK
+            delta's non-ABI changes)
 
           ## Branding
 
@@ -500,11 +523,11 @@ jobs:
           \`uname -r\` show:
 
           \`\`\`
-          6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v${VERSION}
+          6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v${VERSION}
           \`\`\`
 
           The module ABI stamp (vermagic) is deliberately pinned to the stock
-          value \`6.6.92-android15-8-abA145PXXSDDZH1-4k SMP preempt mod_unload
+          value \`6.6.118-android15-8-abA145PXXUEDZJ2-4k SMP preempt mod_unload
           modversions aarch64\`, so the prebuilt modules in \`/vendor/lib/modules\`
           keep loading. Only the displayed release string changed.
 
@@ -559,7 +582,7 @@ jobs:
           compression-level: 6
 
       - name: Publish GitHub release
-        if: success() && steps.meta.outputs.tag != ''
+        if: success() && steps.meta.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}

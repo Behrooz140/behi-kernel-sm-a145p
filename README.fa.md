@@ -2,12 +2,12 @@
 
 [English](README.md) | **فارسی**
 
-![kernel](https://img.shields.io/badge/kernel-6.6.92-blue)
+![kernel](https://img.shields.io/badge/kernel-6.6.118-blue)
 ![device](https://img.shields.io/badge/device-SM--A145P-green)
 ![KernelSU](https://img.shields.io/badge/KernelSU-v3.3.1-orange)
 ![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-sm-a145p?label=release)
 
-یک کرنل شخصی‌سازی‌شدهٔ GKI اندروید ۱۵ (لینوکس 6.6.92) برای **سامسونگ Galaxy A14 4G،
+یک کرنل شخصی‌سازی‌شدهٔ GKI اندروید ۱۵ (لینوکس 6.6.118) برای **سامسونگ Galaxy A14 4G،
 مدل دقیق SM-A145P** (`a14m`، مدیاتک Helio G80 / MT6769V) که برای KernelSU و کارهای
 کانتینری مثل Droidspaces ساخته شده است.
 
@@ -19,8 +19,8 @@
 بستهٔ انتشار **فقط یک boot image** است. هیچ ماژول KernelSU، هیچ تغییری در
 `vendor_dlkm` و هیچ نصب داخلی اندروید ندارد: `boot` را فلش می‌کنی، ریبوت، تمام.
 
-نسخهٔ فعلی: **v1.4** —
-`6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4`
+نسخهٔ فعلی: **v1.5** —
+`6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5`
 
 ---
 
@@ -51,14 +51,14 @@
 | مدل | Samsung Galaxy A14 4G (SM-A145P / `a14m`) |
 | چیپست | MediaTek Helio G80 (MT6769V) |
 | پردازنده | ۲ × Cortex-A75 + ۶ × Cortex-A55 |
-| کرنل | 6.6.92 GKI، `android15-6.6` |
-| فریمور پایه | `A145PXXSDDZH1` |
-| رشتهٔ نسخهٔ کرنل | `6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4` |
+| کرنل | 6.6.118 GKI، `android15-6.6` |
+| فریمور پایه | `A145PXXUEDZJ2` |
+| رشتهٔ نسخهٔ کرنل | `6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5` |
 | boot image | ۳۲ مگابایت، هدر v4، فوتر AVB (`SHA256_RSA4096`، کلید تست AOSP) |
 | نوع بیلد | KernelSU `v3.3.1` (نسخهٔ `32680`)، بیلد user |
 
 رشتهٔ نسخهٔ کرنل، پایهٔ استوک
-(`6.6.92-android15-8-abA145PXXSDDZH1-4k`) را دست‌نخورده نگه می‌دارد و برند شخصی و
+(`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) را دست‌نخورده نگه می‌دارد و برند شخصی و
 نسخهٔ بسته را به انتهای آن اضافه می‌کند. نشانهٔ ABI ماژول (vermagic) عمداً روی مقدار
 **استوک** پین شده تا همهٔ ماژول‌های ازپیش‌ساختهٔ `/vendor` لود شوند؛ فقط رشتهٔ
 نمایشی تغییر کرده است.
@@ -92,6 +92,10 @@ KernelSU داخل خود کرنل کامپایل شده است.
   کرنلی که ماژول‌های استوک vendor را رد کند اصلاً منتشر نمی‌شود.
 - **فرکانس‌های استوک CPU** — بدون اورکلاک و بدون تغییر ولتاژ (پایین‌تر توضیح داده شده).
 
+نسخهٔ v1.5 کرنل را روی پایهٔ استوک جدید بازنشانی می‌کند — لینوکس 6.6.118،
+فریمور `A145PXXUEDZJ2` — تا boot image سفارشی با آخرین فریمور و ماژول‌های
+ازپیش‌ساختهٔ `/vendor` آن بخواند، با همان مجموعهٔ امکانات v1.4.
+
 نسخهٔ v1.4 قابلیت IPv6 NAT (`CONFIG_IP6_NF_NAT`،
 `CONFIG_IP6_NF_TARGET_MASQUERADE`) را به مجموعهٔ Droidspaces اضافه می‌کند؛ حالا
 کانتینرهای `--net=nat` علاوه بر IPv4 روی IPv6 هم NAT می‌گیرند. دو آیتم اختیاری
@@ -105,7 +109,7 @@ KernelSU داخل خود کرنل کامپایل شده است.
 - **بوت‌لودر آنلاک‌شده** (boot image با کلید تست عمومی AOSP امضا شده، نه کلید سامسونگ؛
   روی دستگاه آنلاک پذیرفته می‌شود).
 - **Odin** (ویندوز، یا Wine روی لینوکس) برای فلش بستهٔ AP.
-- فریمور پایهٔ **`A145PXXSDDZH1`** توصیه می‌شود. vermagic روی همین پایه پین شده؛ روی
+- فریمور پایهٔ **`A145PXXUEDZJ2`** توصیه می‌شود. vermagic روی همین پایه پین شده؛ روی
   نسخه‌های دیگر فریمور ممکن است ماژول‌های `/vendor` عدم‌تطابق نسخه گزارش کنند.
 - مدیر KernelSU نسخهٔ **v3.3.1 یا جدیدتر** اگر روت می‌خواهی.
 - `adb` و `su` برای مراحل بررسی.
@@ -130,7 +134,7 @@ KernelSU داخل خود کرنل کامپایل شده است.
 
 ```sh
 adb shell uname -r
-# 6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4
+# 6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5
 ```
 
 با روت:
@@ -157,7 +161,7 @@ su -c 'lsmod | wc -l; lsmod | head'
 چون فقط پارتیشن `boot` عوض می‌شود، بازگشت یک فلش معمولی با Odin است:
 
 - boot image قبلی که کار می‌کرد را فلش کن، یا
-- فریمور کامل استوک `A145PXXSDDZH1` را فلش کن (AP + BL + CP + CSC؛ برای حفظ
+- فریمور کامل استوک `A145PXXUEDZJ2` را فلش کن (AP + BL + CP + CSC؛ برای حفظ
   داده‌ها از `HOME_CSC` استفاده کن).
 
 هیچ ماژول یا پارتیشن دیگری برای برگرداندن وجود ندارد.
@@ -185,11 +189,14 @@ su -c 'lsmod | wc -l; lsmod | head'
 - `VERMAGIC_STRING` را در `kernel-6.6/include/linux/vermagic.h` دقیقاً روی مقدار
   استوک پین می‌کند؛
 - پایهٔ رشتهٔ نسخه را مثل استوک نگه می‌دارد
-  (`6.6.92-android15-8-abA145PXXSDDZH1-4k`) و فقط `-behi-vX.Y` را اضافه می‌کند؛
+  (`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) و فقط `-behi-vX.Y` را اضافه می‌کند؛
 - گزینه‌های شکنندهٔ ABI را فعال نمی‌کند (`NF_TABLES*`، `KSM`، `VXLAN`، `IPVLAN`،
   `NF_CONNTRACK_LABELS`، `LRU_GEN`، `CFS_BANDWIDTH`، `CGROUP_PIDS` و…)؛
-- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.0.txt` اجرا
-  می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود.
+- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.5.txt` اجرا
+  می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود. بیلاین v1.5
+  همان v1.0 است که تغییرات غیر‌ABI دلتای ACK ‏6.6.92 → 6.6.118 از پیش در آن
+  اعمال شده (پنج vendor hook حذف‌شده و چهار نمادی که امضایشان عوض شده)؛ هیچ‌کدام
+  جزو ABI ‏GKI نیستند.
 
 ### چرا `--cpus` و `--pids-limit` پشتیبانی نمی‌شوند
 
@@ -292,8 +299,8 @@ BOOT_PARTITION_SIZE=33554432 \
 | `.github/workflows/build.yml` | CI کامل: ابزارها، پچ‌ها، KernelSU، گیت‌های config، بیلد، بسته‌بندی و انتشار |
 | `kernel/` | درخت ماژول‌های دستگاه (`kernel_device_modules-6.6`) و ورودی بیلد Kleaf/Bazel |
 | `kernel-6.6/` | سورس کرنل GKI (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.0.txt` | baseline سالم CRC نمادهای صادرشده |
-| `configs/stock-a145pxxsddzh1.config` | تنظیمات مرجع استوک |
+| `configs/kmi-baseline-v1.5.txt` | baseline سالم CRC نمادهای صادرشده (v1.0 با اعمال تغییرات دلتای 6.6.118) |
+| `configs/stock-a145pxxuedzj2.config` | تنظیمات مرجع استوک |
 | `scripts/kmi_check.py` | گیت ABI که در CI اجرا می‌شود |
 | `scripts/build_boot_image.sh` | سازندهٔ boot image ۳۲ مگابایتی + فوتر AVB |
 | `build_kernel.sh` | wrapper کوچک برای بیلد درخت دستگاه |
@@ -305,7 +312,7 @@ BOOT_PARTITION_SIZE=33554432 \
 
 **نبود Wi-Fi / GPS / FM یا سخت‌افزار دیگر.** این درایورها ماژول‌های ازپیش‌ساختهٔ
 `/vendor` هستند؛ اگر رد شوند یعنی boot image و پایهٔ فریمور با هم نمی‌خوانند. مطمئن
-شو دستگاه روی `A145PXXSDDZH1` است و boot image از ریلیز همین پروژه آمده است.
+شو دستگاه روی `A145PXXUEDZJ2` است و boot image از ریلیز همین پروژه آمده است.
 
 **مدیر KernelSU پیام «unsupported» می‌دهد.** از مدیر KernelSU نسخهٔ `v3.3.1` یا
 جدیدتر استفاده کن. کرنل نسخهٔ KernelSU را `32680` گزارش می‌کند.
@@ -320,7 +327,7 @@ BOOT_PARTITION_SIZE=33554432 \
 - [Droidspaces](https://github.com/ravindu644/Droidspaces-OSS) از ravindu644 —
   پشتیبانی کانتینر و پچ SYSVIPC kABI.
 - ابزارهای `mkbootimg` و `avbtool` اندروید برای ساخت image و امضای AVB.
-- سامسونگ برای فریمور استوک `A145PXXSDDZH1` و مدیاتک برای ماژول‌های vendor
+- سامسونگ برای فریمور استوک `A145PXXUEDZJ2` و مدیاتک برای ماژول‌های vendor
   MT6769V که این کرنل با آن‌ها سازگار می‌ماند.
 
 ## سلب مسئولیت

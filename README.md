@@ -2,12 +2,12 @@
 
 **English** | [فارسی](README.fa.md)
 
-![kernel](https://img.shields.io/badge/kernel-6.6.92-blue)
+![kernel](https://img.shields.io/badge/kernel-6.6.118-blue)
 ![device](https://img.shields.io/badge/device-SM--A145P-green)
 ![KernelSU](https://img.shields.io/badge/KernelSU-v3.3.1-orange)
 ![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-sm-a145p?label=release)
 
-A personalised Android 15 GKI kernel (Linux 6.6.92) for the **Samsung Galaxy A14 4G,
+A personalised Android 15 GKI kernel (Linux 6.6.118) for the **Samsung Galaxy A14 4G,
 exact model SM-A145P** (`a14m`, MediaTek Helio G80 / MT6769V), built for KernelSU
 and container workloads such as Droidspaces.
 
@@ -20,8 +20,8 @@ The release is a **single boot image**. There are no KernelSU modules, no
 `vendor_dlkm` changes and nothing to install inside Android: flash `boot`, reboot,
 done.
 
-Current release: **v1.4** —
-`6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4`
+Current release: **v1.5** —
+`6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5`
 
 ---
 
@@ -52,14 +52,14 @@ Current release: **v1.4** —
 | Model | Samsung Galaxy A14 4G (SM-A145P / `a14m`) |
 | SoC | MediaTek Helio G80 (MT6769V) |
 | CPU | 2 × Cortex-A75 + 6 × Cortex-A55 |
-| Kernel | 6.6.92 GKI, `android15-6.6` |
-| Base firmware | `A145PXXSDDZH1` |
-| Kernel release string | `6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4` |
+| Kernel | 6.6.118 GKI, `android15-6.6` |
+| Base firmware | `A145PXXUEDZJ2` |
+| Kernel release string | `6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5` |
 | Boot image | 32 MiB, header v4, AVB hash footer (`SHA256_RSA4096`, AOSP test key) |
 | Build variant | KernelSU `v3.3.1` (version `32680`), user build |
 
 The kernel release string keeps the stock base
-(`6.6.92-android15-8-abA145PXXSDDZH1-4k`) and appends the personal brand and the
+(`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) and appends the personal brand and the
 package version. The module ABI stamp (vermagic) is pinned to the **stock** value
 so all prebuilt modules under `/vendor` keep loading — only the user-visible
 string changed.
@@ -94,6 +94,10 @@ compiled into the kernel itself.
   modules cannot be released.
 - **Stock CPU clocks** — no overclock, no voltage changes (see below).
 
+v1.5 rebases the kernel onto the newer stock base — Linux 6.6.118, firmware
+`A145PXXUEDZJ2` — so the custom boot image matches the latest firmware and its
+prebuilt `/vendor` modules, with the same feature set as v1.4.
+
 v1.4 adds IPv6 NAT (`CONFIG_IP6_NF_NAT`,
 `CONFIG_IP6_NF_TARGET_MASQUERADE`) to the Droidspaces feature set: `--net=nat`
 containers now get NAT over IPv6 as well as IPv4. The remaining two optional
@@ -107,7 +111,7 @@ See the ABI section below for the exact reason.
 - **Unlocked bootloader** (the boot image is signed with a public AOSP test key,
   not a Samsung key; this is accepted on unlocked devices).
 - **Odin** (Windows, or Wine on Linux) to flash the AP package.
-- Base firmware **`A145PXXSDDZH1`** is recommended. The vermagic is pinned to this
+- Base firmware **`A145PXXUEDZJ2`** is recommended. The vermagic is pinned to this
   base; on other firmware revisions the prebuilt `/vendor` modules may report a
   version mismatch.
 - KernelSU manager **v3.3.1 or newer** if you want root.
@@ -133,7 +137,7 @@ flashing can take a few minutes.
 
 ```sh
 adb shell uname -r
-# 6.6.92-android15-8-abA145PXXSDDZH1-4k-behi-v1.4
+# 6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5
 ```
 
 With root:
@@ -160,7 +164,7 @@ su -c 'lsmod | wc -l; lsmod | head'
 Flashing only changes `boot`, so rollback is a normal Odin flash:
 
 - Flash your previous working boot image, or
-- Flash the full stock firmware for `A145PXXSDDZH1` (AP + BL + CP + CSC;
+- Flash the full stock firmware for `A145PXXUEDZJ2` (AP + BL + CP + CSC;
   use `HOME_CSC` to keep user data).
 
 There is no module or partition to undo.
@@ -189,11 +193,14 @@ This project therefore:
 - pins `VERMAGIC_STRING` to the exact stock value in
   `kernel-6.6/include/linux/vermagic.h`;
 - keeps the release string base identical to stock
-  (`6.6.92-android15-8-abA145PXXSDDZH1-4k`) and only appends `-behi-vX.Y`;
+  (`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) and only appends `-behi-vX.Y`;
 - refuses to enable ABI-breaking options (`NF_TABLES*`, `KSM`, `VXLAN`, `IPVLAN`,
   `NF_CONNTRACK_LABELS`, `LRU_GEN`, `CFS_BANDWIDTH`, `CGROUP_PIDS`, …);
-- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.0.txt` on every
-  build and fails if any exported CRC differs or disappears.
+- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.5.txt` on every
+  build and fails if any exported CRC differs or disappears. The v1.5 baseline
+  is the v1.0 one with the ACK 6.6.92 -> 6.6.118 delta's non-ABI changes
+  pre-applied (the five removed vendor hooks and the four symbols whose
+  signature changed); none of them is part of the GKI ABI.
 
 ### Why `--cpus` and `--pids-limit` are not supported
 
@@ -298,8 +305,8 @@ then an AVB hash footer sized to the 32 MiB `boot` partition.
 | `.github/workflows/build.yml` | Full CI: toolchain, patches, KernelSU, config gates, build, packaging, release |
 | `kernel/` | Device kernel modules tree (`kernel_device_modules-6.6`) and the Kleaf/Bazel build entrypoint |
 | `kernel-6.6/` | GKI kernel source (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.0.txt` | Known-good exported symbol CRC baseline |
-| `configs/stock-a145pxxsddzh1.config` | Reference stock configuration |
+| `configs/kmi-baseline-v1.5.txt` | Known-good exported symbol CRC baseline (v1.0 adjusted for the 6.6.118 delta) |
+| `configs/stock-a145pxxuedzj2.config` | Reference stock configuration |
 | `scripts/kmi_check.py` | ABI gate used by CI |
 | `scripts/build_boot_image.sh` | 32 MiB boot image + AVB footer builder |
 | `build_kernel.sh` | Small convenience wrapper around the device-tree build |
@@ -312,7 +319,7 @@ intact.
 
 **Wi-Fi / GPS / FM / other hardware missing.** Those drivers are prebuilt modules
 from `/vendor`; if they are rejected, the boot image and the firmware base do not
-match. Make sure the device runs `A145PXXSDDZH1` and that the boot image comes
+match. Make sure the device runs `A145PXXUEDZJ2` and that the boot image comes
 from this project's release.
 
 **KernelSU manager says "unsupported".** Use KernelSU manager `v3.3.1` or newer.
@@ -329,7 +336,7 @@ required for those adapters.
 - [Droidspaces](https://github.com/ravindu644/Droidspaces-OSS) by ravindu644 —
   container support and the GKI SYSVIPC kABI patch.
 - Android `mkbootimg` and `avbtool` for image creation and AVB signing.
-- Samsung for the stock `A145PXXSDDZH1` firmware and MediaTek for the MT6769V
+- Samsung for the stock `A145PXXUEDZJ2` firmware and MediaTek for the MT6769V
   vendor modules this kernel stays compatible with.
 
 ## Disclaimer

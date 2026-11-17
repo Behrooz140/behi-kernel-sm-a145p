@@ -8,6 +8,12 @@
 
 # Default set of warnings, always enabled
 KBUILD_CFLAGS += -Wall
+# GKI 6.6.118 adds MIN()/MAX() to <linux/minmax.h>; many MTK vendor and
+# device-module sources define their own compatible MIN/MAX before that header
+# is pulled in.  The redefinition is harmless (the local definition is what
+# gets used), so keep CONFIG_WERROR from turning clang's default
+# -Wmacro-redefined into a hard build failure.
+KBUILD_CFLAGS += -Wno-macro-redefined
 KBUILD_CFLAGS += -Wundef
 KBUILD_CFLAGS += -Werror=implicit-function-declaration
 KBUILD_CFLAGS += -Werror=implicit-int
@@ -29,6 +35,18 @@ KBUILD_CFLAGS-$(CONFIG_CC_NO_ARRAY_BOUNDS) += -Wno-array-bounds
 ifdef CONFIG_CC_IS_CLANG
 # The kernel builds with '-std=gnu11' so use of GNU extensions is acceptable.
 KBUILD_CFLAGS += -Wno-gnu
+
+# Clang may emit a warning when a const variable, such as the dummy variables
+# in typecheck(), or const member of an aggregate type are not initialized,
+# which can result in unexpected behavior. However, in many audited cases of
+# the "field" variant of the warning, this is intentional because the field is
+# never used within a particular call path, the field is within a union with
+# other non-const members, or the containing object is not const so the field
+# can be modified via memcpy() / memset(). While the variable warning also gets
+# disabled with this same switch, there should not be too much coverage lost
+# because -Wuninitialized will still flag when an uninitialized const variable
+# is used.
+KBUILD_CFLAGS += $(call cc-disable-warning, default-const-init-unsafe)
 else
 
 # gcc inanely warns about local variables called 'main'
