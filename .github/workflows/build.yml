@@ -512,7 +512,9 @@ jobs:
           - USB serial core kept as a module exactly like the stock firmware
             (no \`.ko\` files are shipped, so USB-serial adapters need a module build)
           - Kernel stack offset randomization
-          - ABI guard: exported symbol CRCs are compared with v1.0 on every build
+          - ABI guard: exported symbol CRCs are compared with a known-good
+            baseline on every build (v1.5 = v1.0 adjusted for the 6.6.118 ACK
+            delta's non-ABI changes)
 
           ## Branding
 
