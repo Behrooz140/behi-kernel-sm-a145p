@@ -412,7 +412,7 @@ jobs:
           python3 scripts/kmi_check.py verify \
             --image "$IMAGE" \
             --system-map "$SYSTEM_MAP" \
-            --baseline configs/kmi-baseline-v1.0.txt
+            --baseline configs/kmi-baseline-v1.5.txt
 
           KERNEL_RELEASE="$(strings "$IMAGE" | sed -n 's/^Linux version \([^ ]*\) .*/\1/p' | head -n1)"
           echo "Detected kernel release: $KERNEL_RELEASE"
