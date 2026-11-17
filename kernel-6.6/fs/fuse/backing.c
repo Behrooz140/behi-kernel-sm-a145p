@@ -806,10 +806,6 @@ int fuse_file_read_iter_initialize(
 		.ret = fri->fri.size,
 	};
 
-	fri->frio = (struct fuse_read_iter_out) {
-		.ret = fri->fri.size,
-	};
-
 	/* TODO we can't assume 'to' is a kvec */
 	/* TODO we also can't assume the vector has only one component */
 	*fa = (struct fuse_bpf_args) {
@@ -870,8 +866,6 @@ int fuse_file_read_iter_backing(struct fuse_bpf_args *fa,
 		if (ret != -EIOCBQUEUED)
 			fuse_bpf_aio_cleanup_handler(aio_req);
 	}
-
-	frio->ret = ret;
 
 	frio->ret = ret;
 

@@ -456,11 +456,6 @@ repeat_alloc:
 		spin_unlock_irqrestore(&pool->lock, flags);
 		goto repeat_alloc;
 	}
-	trace_android_vh_mempool_alloc_skip_wait(&gfp_temp, &skip_wait);
-	if (skip_wait) {
-		spin_unlock_irqrestore(&pool->lock, flags);
-		goto repeat_alloc;
-	}
 
 	/* Let's wait for someone else to return an element to @pool */
 	init_wait(&wait);

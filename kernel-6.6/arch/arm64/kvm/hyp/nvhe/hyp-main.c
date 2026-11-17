@@ -1094,27 +1094,6 @@ out:
 	cpu_reg(host_ctxt, 1) = ret;
 }
 
-static void handle___pkvm_host_split_guest(struct kvm_cpu_context *host_ctxt)
-{
-	DECLARE_REG(u64, pfn, host_ctxt, 1);
-	DECLARE_REG(u64, gfn, host_ctxt, 2);
-	DECLARE_REG(u64, size, host_ctxt, 3);
-	struct pkvm_hyp_vcpu *hyp_vcpu;
-	int ret = -EINVAL;
-
-	if (!is_protected_kvm_enabled())
-		goto out;
-
-	hyp_vcpu = pkvm_get_loaded_hyp_vcpu();
-	if (!hyp_vcpu)
-		goto out;
-
-	ret = __pkvm_host_split_guest(pfn, gfn, size, hyp_vcpu);
-
-out:
-	cpu_reg(host_ctxt, 1) = ret;
-}
-
 static void handle___kvm_adjust_pc(struct kvm_cpu_context *host_ctxt)
 {
 	struct pkvm_hyp_vcpu *hyp_vcpu;

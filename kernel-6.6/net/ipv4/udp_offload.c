@@ -359,10 +359,6 @@ struct sk_buff *__udp_gso_segment(struct sk_buff *gso_skb,
 		if (ret)
 			return ERR_PTR(ret);
 
-		ret = __skb_linearize(gso_skb);
-		if (ret)
-			return ERR_PTR(ret);
-
 		 /* Setup csum, as fraglist skips this in udp4_gro_receive. */
 		gso_skb->csum_start = skb_transport_header(gso_skb) - gso_skb->head;
 		gso_skb->csum_offset = offsetof(struct udphdr, check);

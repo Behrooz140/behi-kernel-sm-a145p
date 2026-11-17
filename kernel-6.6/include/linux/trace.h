@@ -95,11 +95,6 @@ static inline struct trace_array *trace_array_get_by_name_ext(
 {
 	return NULL;
 }
-static inline struct trace_array *trace_array_get_by_name_ext(
-	const char *name, const char *systems)
-{
-	return NULL;
-}
 static inline int trace_array_destroy(struct trace_array *tr)
 {
 	return 0;

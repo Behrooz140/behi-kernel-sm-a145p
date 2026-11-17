@@ -417,11 +417,6 @@ struct trace_array_ext {
 	struct trace_array	trace_array;
 };
 
-struct trace_array_ext {
-	const char		*system_names;
-	struct trace_array	trace_array;
-};
-
 enum {
 	TRACE_ARRAY_FL_GLOBAL	= (1 << 0)
 };

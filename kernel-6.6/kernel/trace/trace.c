@@ -9569,12 +9569,6 @@ trace_array_create_systems(const char *name, const char *systems)
 			goto out_free_tr;
 	}
 
-	if (systems) {
-		tr_ext->system_names = kstrdup_const(systems, GFP_KERNEL);
-		if (!tr_ext->system_names)
-			goto out_free_tr;
-	}
-
 	tr->trace_flags = global_trace.trace_flags & ~ZEROED_TRACE_FLAGS;
 
 	cpumask_copy(tr->tracing_cpumask, cpu_all_mask);
@@ -9630,11 +9624,6 @@ static struct trace_array *trace_array_create(const char *name)
 	return trace_array_create_systems(name, NULL);
 }
 
-static struct trace_array *trace_array_create(const char *name)
-{
-	return trace_array_create_systems(name, NULL);
-}
-
 static int instance_mkdir(const char *name)
 {
 	struct trace_array *tr;
@@ -9656,23 +9645,6 @@ out_unlock:
 	mutex_unlock(&event_mutex);
 	return ret;
 }
-
-const char *trace_array_get_system_names(struct trace_array *tr)
-{
-	struct trace_array_ext *tr_ext;
-
-	if (tr == &global_trace)
-		return NULL;
-
-	tr_ext = container_of(tr, struct trace_array_ext, trace_array);
-	return tr_ext->system_names;
-}
-
-struct trace_array *trace_array_get_by_name(const char *name)
-{
-	return trace_array_get_by_name_ext(name, NULL);
-}
-EXPORT_SYMBOL_GPL(trace_array_get_by_name);
 
 const char *trace_array_get_system_names(struct trace_array *tr)
 {

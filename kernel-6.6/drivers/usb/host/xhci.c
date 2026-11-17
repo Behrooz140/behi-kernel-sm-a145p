@@ -230,8 +230,6 @@ int xhci_reset(struct xhci_hcd *xhci, u64 timeout_us)
 
 	trace_android_vh_xhci_full_reset_on_remove(&full_reset);
 
-	trace_android_vh_xhci_full_reset_on_remove(&full_reset);
-
 	ret = xhci_handshake_check_state(xhci, &xhci->op_regs->command,
 				CMD_RESET, 0, timeout_us,
 				full_reset ? 0 : XHCI_STATE_REMOVING);
