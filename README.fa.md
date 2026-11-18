@@ -2,12 +2,12 @@
 
 [English](README.md) | **فارسی**
 
-![kernel](https://img.shields.io/badge/kernel-6.6.118-blue)
+![kernel](https://img.shields.io/badge/kernel-6.6.144-blue)
 ![device](https://img.shields.io/badge/device-SM--A145P-green)
 ![KernelSU](https://img.shields.io/badge/KernelSU-v3.3.1-orange)
 ![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-sm-a145p?label=release)
 
-یک کرنل شخصی‌سازی‌شدهٔ GKI اندروید ۱۵ (لینوکس 6.6.118) برای **سامسونگ Galaxy A14 4G،
+یک کرنل شخصی‌سازی‌شدهٔ GKI اندروید ۱۵ (لینوکس 6.6.144) برای **سامسونگ Galaxy A14 4G،
 مدل دقیق SM-A145P** (`a14m`، مدیاتک Helio G80 / MT6769V) که برای KernelSU و کارهای
 کانتینری مثل Droidspaces ساخته شده است.
 
@@ -19,8 +19,8 @@
 بستهٔ انتشار **فقط یک boot image** است. هیچ ماژول KernelSU، هیچ تغییری در
 `vendor_dlkm` و هیچ نصب داخلی اندروید ندارد: `boot` را فلش می‌کنی، ریبوت، تمام.
 
-نسخهٔ فعلی: **v1.5** —
-`6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5`
+نسخهٔ فعلی: **v1.6** —
+`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6`
 
 ---
 
@@ -51,17 +51,17 @@
 | مدل | Samsung Galaxy A14 4G (SM-A145P / `a14m`) |
 | چیپست | MediaTek Helio G80 (MT6769V) |
 | پردازنده | ۲ × Cortex-A75 + ۶ × Cortex-A55 |
-| کرنل | 6.6.118 GKI، `android15-6.6` |
+| کرنل | 6.6.144 GKI، `android15-6.6` |
 | فریمور پایه | `A145PXXUEDZJ2` |
-| رشتهٔ نسخهٔ کرنل | `6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5` |
+| رشتهٔ نسخهٔ کرنل | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6` |
 | boot image | ۳۲ مگابایت، هدر v4، فوتر AVB (`SHA256_RSA4096`، کلید تست AOSP) |
 | نوع بیلد | KernelSU `v3.3.1` (نسخهٔ `32680`)، بیلد user |
 
-رشتهٔ نسخهٔ کرنل، پایهٔ استوک
-(`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) را دست‌نخورده نگه می‌دارد و برند شخصی و
+رشتهٔ نسخهٔ کرنل، پایهٔ ACK که کرنل روی آن بازنشانی شده
+(`6.6.144-android15-8-abA145PXXUEDZJ2-4k`) را حمل می‌کند و برند شخصی و
 نسخهٔ بسته را به انتهای آن اضافه می‌کند. نشانهٔ ABI ماژول (vermagic) عمداً روی مقدار
-**استوک** پین شده تا همهٔ ماژول‌های ازپیش‌ساختهٔ `/vendor` لود شوند؛ فقط رشتهٔ
-نمایشی تغییر کرده است.
+**استوک** فریمور (`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) پین شده تا همهٔ
+ماژول‌های ازپیش‌ساختهٔ `/vendor` لود شوند؛ فقط رشتهٔ نمایشی تغییر کرده است.
 
 ## چه چیزی دریافت می‌کنید
 
@@ -91,6 +91,11 @@ KernelSU داخل خود کرنل کامپایل شده است.
 - **گیت ABI در CI**: CRC نمادهای صادرشده در هر بیلد با نسخهٔ سالم v1.0 مقایسه می‌شود؛
   کرنلی که ماژول‌های استوک vendor را رد کند اصلاً منتشر نمی‌شود.
 - **فرکانس‌های استوک CPU** — بدون اورکلاک و بدون تغییر ولتاژ (پایین‌تر توضیح داده شده).
+
+نسخهٔ v1.6 کرنل را روی ریلیز جدیدتر ACK بازنشانی می‌کند — لینوکس 6.6.144
+(`android15-6.6.144_r00`)، فریمور `A145PXXUEDZJ2` — با همان مجموعهٔ امکانات v1.5.
+نشانهٔ vermagic روی مقدار استوک 6.6.118 پین می‌ماند تا ماژول‌های ازپیش‌ساختهٔ
+`/vendor` لود شوند.
 
 نسخهٔ v1.5 کرنل را روی پایهٔ استوک جدید بازنشانی می‌کند — لینوکس 6.6.118،
 فریمور `A145PXXUEDZJ2` — تا boot image سفارشی با آخرین فریمور و ماژول‌های
@@ -134,7 +139,7 @@ KernelSU داخل خود کرنل کامپایل شده است.
 
 ```sh
 adb shell uname -r
-# 6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5
+# 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6
 ```
 
 با روت:
@@ -188,15 +193,14 @@ su -c 'lsmod | wc -l; lsmod | head'
 
 - `VERMAGIC_STRING` را در `kernel-6.6/include/linux/vermagic.h` دقیقاً روی مقدار
   استوک پین می‌کند؛
-- پایهٔ رشتهٔ نسخه را مثل استوک نگه می‌دارد
-  (`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) و فقط `-behi-vX.Y` را اضافه می‌کند؛
+- پایهٔ فریمور رشتهٔ نسخه را نگه می‌دارد
+  (`android15-8-abA145PXXUEDZJ2-4k`) و فقط `-behi-vX.Y` را اضافه می‌کند؛
 - گزینه‌های شکنندهٔ ABI را فعال نمی‌کند (`NF_TABLES*`، `KSM`، `VXLAN`، `IPVLAN`،
   `NF_CONNTRACK_LABELS`، `LRU_GEN`، `CFS_BANDWIDTH`، `CGROUP_PIDS` و…)؛
-- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.5.txt` اجرا
-  می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود. بیلاین v1.5
-  همان v1.0 است که تغییرات غیر‌ABI دلتای ACK ‏6.6.92 → 6.6.118 از پیش در آن
-  اعمال شده (پنج vendor hook حذف‌شده و چهار نمادی که امضایشان عوض شده)؛ هیچ‌کدام
-  جزو ABI ‏GKI نیستند.
+- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.6.txt` اجرا
+  می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود. بیلاین v1.6
+  همان v1.5 است که تغییرات غیر‌ABI دلتای ACK ‏6.6.118 → 6.6.144 از پیش در آن
+  اعمال شده؛ هیچ‌کدام جزو ABI ‏GKI نیستند.
 
 ### چرا `--cpus` و `--pids-limit` پشتیبانی نمی‌شوند
 
@@ -299,7 +303,7 @@ BOOT_PARTITION_SIZE=33554432 \
 | `.github/workflows/build.yml` | CI کامل: ابزارها، پچ‌ها، KernelSU، گیت‌های config، بیلد، بسته‌بندی و انتشار |
 | `kernel/` | درخت ماژول‌های دستگاه (`kernel_device_modules-6.6`) و ورودی بیلد Kleaf/Bazel |
 | `kernel-6.6/` | سورس کرنل GKI (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.5.txt` | baseline سالم CRC نمادهای صادرشده (v1.0 با اعمال تغییرات دلتای 6.6.118) |
+| `configs/kmi-baseline-v1.6.txt` | baseline سالم CRC نمادهای صادرشده (v1.5 با اعمال تغییرات دلتای 6.6.144) |
 | `configs/stock-a145pxxuedzj2.config` | تنظیمات مرجع استوک |
 | `scripts/kmi_check.py` | گیت ABI که در CI اجرا می‌شود |
 | `scripts/build_boot_image.sh` | سازندهٔ boot image ۳۲ مگابایتی + فوتر AVB |
