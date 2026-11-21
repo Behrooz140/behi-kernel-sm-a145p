@@ -748,8 +748,18 @@ static void atm_profile_gpu_power_limit(s64 latest_latency)
 }
 #endif
 #if IS_ENABLED(CONFIG_MTK_PPM_V3) || IS_ENABLED(CONFIG_MTK_PLAT_POWER_6853)
+/* behi: the 6.6.118 ACK reworked the frequency-invariance path, which makes
+ * the ATM power model hand PPM an aggressive CPU budget already around 55 C.
+ * That rewrites scaling_max_freq every second even when the device is fine.
+ * Only let the adaptive budget through once the die is genuinely hot; below
+ * that keep the hardware frequency limits untouched.  Other thermal cooling
+ * devices and the 100 C shutdown trip stay active.
+ */
+#define BEHI_ATM_ADAPTIVE_TJ_MC	75000	/* milli-C */
 static void set_adaptive_cpu_power_limit(unsigned int limit)
 {
+	if (krtatm_curr_maxtj < BEHI_ATM_ADAPTIVE_TJ_MC)
+		limit = 0;
 #if IS_ENABLED(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 #if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER &&	\
 	PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM

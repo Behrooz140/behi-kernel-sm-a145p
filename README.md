@@ -2,12 +2,12 @@
 
 **English** | [فارسی](README.fa.md)
 
-![kernel](https://img.shields.io/badge/kernel-6.6.118-blue)
+![kernel](https://img.shields.io/badge/kernel-6.6.144-blue)
 ![device](https://img.shields.io/badge/device-SM--A145P-green)
 ![KernelSU](https://img.shields.io/badge/KernelSU-v3.3.1-orange)
 ![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-sm-a145p?label=release)
 
-A personalised Android 15 GKI kernel (Linux 6.6.118) for the **Samsung Galaxy A14 4G,
+A personalised Android 15 GKI kernel (Linux 6.6.144) for the **Samsung Galaxy A14 4G,
 exact model SM-A145P** (`a14m`, MediaTek Helio G80 / MT6769V), built for KernelSU
 and container workloads such as Droidspaces.
 
@@ -20,8 +20,8 @@ The release is a **single boot image**. There are no KernelSU modules, no
 `vendor_dlkm` changes and nothing to install inside Android: flash `boot`, reboot,
 done.
 
-Current release: **v1.5** —
-`6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5`
+Current release: **v1.6** —
+`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6`
 
 ---
 
@@ -52,17 +52,17 @@ Current release: **v1.5** —
 | Model | Samsung Galaxy A14 4G (SM-A145P / `a14m`) |
 | SoC | MediaTek Helio G80 (MT6769V) |
 | CPU | 2 × Cortex-A75 + 6 × Cortex-A55 |
-| Kernel | 6.6.118 GKI, `android15-6.6` |
+| Kernel | 6.6.144 GKI, `android15-6.6` |
 | Base firmware | `A145PXXUEDZJ2` |
-| Kernel release string | `6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5` |
+| Kernel release string | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6` |
 | Boot image | 32 MiB, header v4, AVB hash footer (`SHA256_RSA4096`, AOSP test key) |
 | Build variant | KernelSU `v3.3.1` (version `32680`), user build |
 
-The kernel release string keeps the stock base
-(`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) and appends the personal brand and the
-package version. The module ABI stamp (vermagic) is pinned to the **stock** value
-so all prebuilt modules under `/vendor` keep loading — only the user-visible
-string changed.
+The kernel release string carries the ACK base it was rebased onto
+(`6.6.144-android15-8-abA145PXXUEDZJ2-4k`) and appends the personal brand and the
+package version. The module ABI stamp (vermagic) is pinned to the **stock**
+firmware value (`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) so all prebuilt modules
+under `/vendor` keep loading — only the user-visible string changed.
 
 ## What you get
 
@@ -93,6 +93,11 @@ compiled into the kernel itself.
   v1.0 baseline on every build, so a kernel that would reject stock vendor
   modules cannot be released.
 - **Stock CPU clocks** — no overclock, no voltage changes (see below).
+
+v1.6 rebases the kernel onto the newer ACK release — Linux 6.6.144
+(`android15-6.6.144_r00`), firmware `A145PXXUEDZJ2` — with the same feature set as
+v1.5. The vermagic stamp stays pinned to the stock 6.6.118 value so the prebuilt
+`/vendor` modules keep loading.
 
 v1.5 rebases the kernel onto the newer stock base — Linux 6.6.118, firmware
 `A145PXXUEDZJ2` — so the custom boot image matches the latest firmware and its
@@ -137,7 +142,7 @@ flashing can take a few minutes.
 
 ```sh
 adb shell uname -r
-# 6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5
+# 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6
 ```
 
 With root:
@@ -192,15 +197,14 @@ This project therefore:
 
 - pins `VERMAGIC_STRING` to the exact stock value in
   `kernel-6.6/include/linux/vermagic.h`;
-- keeps the release string base identical to stock
-  (`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) and only appends `-behi-vX.Y`;
+- keeps the firmware part of the release string
+  (`android15-8-abA145PXXUEDZJ2-4k`) and only appends `-behi-vX.Y`;
 - refuses to enable ABI-breaking options (`NF_TABLES*`, `KSM`, `VXLAN`, `IPVLAN`,
   `NF_CONNTRACK_LABELS`, `LRU_GEN`, `CFS_BANDWIDTH`, `CGROUP_PIDS`, …);
-- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.5.txt` on every
-  build and fails if any exported CRC differs or disappears. The v1.5 baseline
-  is the v1.0 one with the ACK 6.6.92 -> 6.6.118 delta's non-ABI changes
-  pre-applied (the five removed vendor hooks and the four symbols whose
-  signature changed); none of them is part of the GKI ABI.
+- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.6.txt` on every
+  build and fails if any exported CRC differs or disappears. The v1.6 baseline
+  is the v1.5 one with the ACK 6.6.118 -> 6.6.144 delta's non-ABI changes
+  pre-applied; none of them is part of the GKI ABI.
 
 ### Why `--cpus` and `--pids-limit` are not supported
 
@@ -305,7 +309,7 @@ then an AVB hash footer sized to the 32 MiB `boot` partition.
 | `.github/workflows/build.yml` | Full CI: toolchain, patches, KernelSU, config gates, build, packaging, release |
 | `kernel/` | Device kernel modules tree (`kernel_device_modules-6.6`) and the Kleaf/Bazel build entrypoint |
 | `kernel-6.6/` | GKI kernel source (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.5.txt` | Known-good exported symbol CRC baseline (v1.0 adjusted for the 6.6.118 delta) |
+| `configs/kmi-baseline-v1.6.txt` | Known-good exported symbol CRC baseline (v1.5 adjusted for the 6.6.144 delta) |
 | `configs/stock-a145pxxuedzj2.config` | Reference stock configuration |
 | `scripts/kmi_check.py` | ABI gate used by CI |
 | `scripts/build_boot_image.sh` | 32 MiB boot image + AVB footer builder |

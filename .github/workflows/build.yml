@@ -29,7 +29,7 @@ env:
   # Base firmware release must stay identical to stock so the vermagic stamp
   # matches the prebuilt /vendor modules. The user-visible release string adds
   # the "behi" branding and the package version at the end:
-  # 6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v1.5
+  # 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6
   #
   # Cutting a new release (every kernel update):
   #   1. bump CONFIG_LOCALVERSION ("-4k-behi-vX.Y") in
@@ -38,7 +38,10 @@ env:
   #   2. push/merge to main: the workflow derives the tag from that value,
   #      builds and publishes the GitHub release automatically.
   BUILD_NUMBER: A145PXXUEDZJ2
-  KERNEL_BASE_RELEASE: 6.6.118-android15-8-abA145PXXUEDZJ2-4k
+  KERNEL_BASE_RELEASE: 6.6.144-android15-8-abA145PXXUEDZJ2-4k
+  # The vermagic stamp stays at the stock firmware's 6.6.118 value on purpose:
+  # /vendor modules were built against 6.6.118 and their vermagic is fixed, so
+  # it must not follow the (newer) kernel version we rebase onto.
   STOCK_VERMAGIC: '6.6.118-android15-8-abA145PXXUEDZJ2-4k SMP preempt mod_unload modversions aarch64'
   KSU_TAG: v3.3.1
   KSU_COMMIT: 0c0fdb960178fa12d80d6cbcfdcb6ad8be6a865d
@@ -409,10 +412,19 @@ jobs:
           echo "Advanced v1.2 config options present; KMI breakers disabled"
 
           echo "=== KMI compatibility gate ==="
+          # Always emit this build's full export set first. If the gate below
+          # fails, the emitted file still rides along in the uploaded artifact
+          # (the upload step uses if: always()), so the baseline can be
+          # reconciled without burning a second build.
+          mkdir -p release
+          python3 scripts/kmi_check.py emit \
+            --image "$IMAGE" \
+            --system-map "$SYSTEM_MAP" \
+            --output release/kmi-emitted.txt
           python3 scripts/kmi_check.py verify \
             --image "$IMAGE" \
             --system-map "$SYSTEM_MAP" \
-            --baseline configs/kmi-baseline-v1.5.txt
+            --baseline configs/kmi-baseline-v1.6.txt
 
           KERNEL_RELEASE="$(strings "$IMAGE" | sed -n 's/^Linux version \([^ ]*\) .*/\1/p' | head -n1)"
           echo "Detected kernel release: $KERNEL_RELEASE"
@@ -513,8 +525,8 @@ jobs:
             (no \`.ko\` files are shipped, so USB-serial adapters need a module build)
           - Kernel stack offset randomization
           - ABI guard: exported symbol CRCs are compared with a known-good
-            baseline on every build (v1.5 = v1.0 adjusted for the 6.6.118 ACK
-            delta's non-ABI changes)
+            baseline on every build (v1.6 = v1.5 adjusted for the 6.6.118 ->
+            6.6.144 ACK delta's non-ABI changes)
 
           ## Branding
 
@@ -523,7 +535,7 @@ jobs:
           \`uname -r\` show:
 
           \`\`\`
-          6.6.118-android15-8-abA145PXXUEDZJ2-4k-behi-v${VERSION}
+          6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v${VERSION}
           \`\`\`
 
           The module ABI stamp (vermagic) is deliberately pinned to the stock
@@ -555,7 +567,8 @@ jobs:
           ## Notes
 
           - Kernel modules already present on \`/vendor\` keep working: every exported
-            symbol CRC is verified against the known-good v1.0 build (\`CONFIG_MODVERSIONS=y\`).
+            symbol CRC is verified against the v${VERSION} KMI baseline
+            (\`configs/kmi-baseline-v${VERSION}.txt\`, \`CONFIG_MODVERSIONS=y\`).
           - \`CONFIG_MODULE_SIG_PROTECT\` is disabled, matching the previous working build.
           - Verify with \`uname -r\` → \`${KERNEL_RELEASE}\`.
           EOF
