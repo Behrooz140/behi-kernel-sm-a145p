@@ -567,7 +567,8 @@ jobs:
           ## Notes
 
           - Kernel modules already present on \`/vendor\` keep working: every exported
-            symbol CRC is verified against the known-good v1.0 build (\`CONFIG_MODVERSIONS=y\`).
+            symbol CRC is verified against the v${VERSION} KMI baseline
+            (\`configs/kmi-baseline-v${VERSION}.txt\`, \`CONFIG_MODVERSIONS=y\`).
           - \`CONFIG_MODULE_SIG_PROTECT\` is disabled, matching the previous working build.
           - Verify with \`uname -r\` → \`${KERNEL_RELEASE}\`.
           EOF
