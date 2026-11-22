@@ -30,8 +30,9 @@
  * physically plausible range and keep the last valid sample.
  *
  * The vendor thermal_monitor.ko is prebuilt and shipped in /vendor, so the
- * fix has to live here, in the built-in GKI thermal core, where every
- * consumer obtains the temperature.
+ * fix has to live here, in the built-in GKI thermal core. It is applied only
+ * to the public thermal_zone_get_temp() API (sysfs and vbus_ctrl); the
+ * thermal governor deliberately keeps seeing the raw value, see below.
  */
 static void behi_sanitize_flash_temp(struct thermal_zone_device *tz, int *temp)
 {
@@ -138,8 +139,6 @@ int __thermal_zone_get_temp(struct thermal_zone_device *tz, int *temp)
 
 	if (ret)
 		dev_dbg(&tz->device, "Failed to get temperature: %d\n", ret);
-	else
-		behi_sanitize_flash_temp(tz, temp);
 
 	return ret;
 }
@@ -172,6 +171,17 @@ int thermal_zone_get_temp(struct thermal_zone_device *tz, int *temp)
 		ret = __thermal_zone_get_temp(tz, temp);
 	else
 		ret = -ENODEV;
+
+	/*
+	 * Only sanitize consumers of the public API (sysfs, vbus_ctrl, ...).
+	 * The thermal governor uses __thermal_zone_get_temp() directly and must
+	 * keep seeing the original value: with the stock 125 C endpoint the CPU
+	 * max frequency stays pinned, while a "sane" 25 C makes the MediaTek ATM
+	 * governor re-enable its 53-63 C adaptive limit and reintroduce the
+	 * frequency oscillation that v1.6 fixed.
+	 */
+	if (!ret)
+		behi_sanitize_flash_temp(tz, temp);
 
 unlock:
 	mutex_unlock(&tz->lock);
