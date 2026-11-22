@@ -28,12 +28,59 @@
 #include <linux/slab.h>
 #include <linux/suspend.h>
 #include <linux/syscore_ops.h>
+#include <linux/thermal.h>
 #include <linux/tick.h>
 #include <linux/units.h>
+#include <linux/workqueue.h>
 #include <trace/events/power.h>
 #include <trace/hooks/cpufreq.h>
 
 static LIST_HEAD(cpufreq_policy_list);
+
+/*
+ * behi max-frequency lock.
+ *
+ * MediaTek's ATM cooler applies short-lived PPM power limits at 53-63 C,
+ * which makes scaling_max_freq bounce between the hardware maximum and much
+ * lower values. Keep the maximum pinned while the CPU is below 75 C; above
+ * that, normal thermal mitigation is left completely untouched.
+ *
+ * The temperature is sampled from a workqueue so that cpufreq_set_policy()
+ * never has to take a thermal zone lock while holding the policy lock.
+ */
+#define BEHI_MAXLOCK_TJ_MC	75000
+static int behi_maxlock_temp_mc = BEHI_MAXLOCK_TJ_MC;
+static struct delayed_work behi_maxlock_work;
+
+static void behi_maxlock_sample(struct work_struct *work)
+{
+	struct thermal_zone_device *tz;
+	int temp = BEHI_MAXLOCK_TJ_MC;
+
+	tz = thermal_zone_get_zone_by_name("mtktscpu");
+	if (tz && !thermal_zone_get_temp(tz, &temp) && temp >= 0)
+		WRITE_ONCE(behi_maxlock_temp_mc, temp);
+	else
+		WRITE_ONCE(behi_maxlock_temp_mc, BEHI_MAXLOCK_TJ_MC);
+
+	schedule_delayed_work(&behi_maxlock_work, HZ);
+}
+
+static unsigned int behi_maxlock_limit(unsigned int requested,
+				       unsigned int hw_max)
+{
+	if (READ_ONCE(behi_maxlock_temp_mc) < BEHI_MAXLOCK_TJ_MC)
+		return hw_max;
+	return requested;
+}
+
+static int __init behi_maxlock_init(void)
+{
+	INIT_DELAYED_WORK(&behi_maxlock_work, behi_maxlock_sample);
+	schedule_delayed_work(&behi_maxlock_work, HZ);
+	return 0;
+}
+late_initcall(behi_maxlock_init);
 
 /* Macros to iterate over CPU policies */
 #define for_each_suitable_policy(__policy, __active)			 \
@@ -2632,7 +2679,9 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 	 * the final aggregated value here.
 	 */
 	new_data.min = freq_qos_read_value(&policy->constraints, FREQ_QOS_MIN);
-	new_data.max = freq_qos_read_value(&policy->constraints, FREQ_QOS_MAX);
+	new_data.max = behi_maxlock_limit(
+		freq_qos_read_value(&policy->constraints, FREQ_QOS_MAX),
+		policy->cpuinfo.max_freq);
 
 	pr_debug("setting new policy for CPU %u: %u - %u kHz\n",
 		 new_data.cpu, new_data.min, new_data.max);

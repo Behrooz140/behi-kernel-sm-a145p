@@ -511,10 +511,15 @@ jobs:
 
           ## Changes in 1.6.1
 
+          - Frequency: \`scaling_max_freq\` is pinned to the hardware maximum
+            while the CPU is below 75 C, so the MediaTek ATM/PPM adaptive
+            limit no longer makes it oscillate at 53-63 C. Above 75 C normal
+            thermal mitigation is unchanged.
           - Thermal: the MTK \`mtktsflash\` (USB/flash thermistor) zone no longer
-            reports the bogus 125 C ADC saturation value; implausible readings
-            are discarded and the last valid temperature is kept. This also
-            stops the spurious 70 C VBUS charging cutoff.
+            reports the bogus 125 C ADC saturation value to sysfs and
+            \`vbus_ctrl\`; the 70 C charging cutoff no longer trips. The thermal
+            governor deliberately keeps seeing the raw value so the frequency
+            lock above stays effective.
           - Defaults: TCP BBR is now the default congestion control and
             fq_codel the default queuing discipline. Both are built into the
             kernel, so no setup is required. (zram remains the stock vendor
