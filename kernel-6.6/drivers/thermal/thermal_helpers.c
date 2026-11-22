@@ -22,6 +22,33 @@
 #include "thermal_core.h"
 #include "thermal_trace.h"
 
+/*
+ * On this board the "mtktsflash" (USB/flash thermistor) sensor can be left
+ * floating, which makes the MediaTek NTC conversion saturate at 125 C.
+ * That bogus endpoint is consumed by the thermal governor and by
+ * vbus_ctrl.c (70 C charging cutoff), so reject readings outside a
+ * physically plausible range and keep the last valid sample.
+ *
+ * The vendor thermal_monitor.ko is prebuilt and shipped in /vendor, so the
+ * fix has to live here, in the built-in GKI thermal core. It is applied only
+ * to the public thermal_zone_get_temp() API (sysfs and vbus_ctrl); the
+ * thermal governor deliberately keeps seeing the raw value, see below.
+ */
+static void behi_sanitize_flash_temp(struct thermal_zone_device *tz, int *temp)
+{
+	static int last_valid = 25000;	/* 25 C, matches vbus_ctrl's fallback */
+
+	if (strcmp(tz->type, "mtktsflash"))
+		return;
+
+	if (*temp > 100000 || *temp < -30000) {
+		*temp = last_valid;
+		return;
+	}
+
+	last_valid = *temp;
+}
+
 int get_tz_trend(struct thermal_zone_device *tz, int trip_index)
 {
 	struct thermal_trip *trip = tz->trips ? &tz->trips[trip_index] : NULL;
@@ -144,6 +171,17 @@ int thermal_zone_get_temp(struct thermal_zone_device *tz, int *temp)
 		ret = __thermal_zone_get_temp(tz, temp);
 	else
 		ret = -ENODEV;
+
+	/*
+	 * Only sanitize consumers of the public API (sysfs, vbus_ctrl, ...).
+	 * The thermal governor uses __thermal_zone_get_temp() directly and must
+	 * keep seeing the original value: with the stock 125 C endpoint the CPU
+	 * max frequency stays pinned, while a "sane" 25 C makes the MediaTek ATM
+	 * governor re-enable its 53-63 C adaptive limit and reintroduce the
+	 * frequency oscillation that v1.6 fixed.
+	 */
+	if (!ret)
+		behi_sanitize_flash_temp(tz, temp);
 
 unlock:
 	mutex_unlock(&tz->lock);

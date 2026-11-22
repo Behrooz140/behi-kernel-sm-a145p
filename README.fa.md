@@ -19,8 +19,8 @@
 بستهٔ انتشار **فقط یک boot image** است. هیچ ماژول KernelSU، هیچ تغییری در
 `vendor_dlkm` و هیچ نصب داخلی اندروید ندارد: `boot` را فلش می‌کنی، ریبوت، تمام.
 
-نسخهٔ فعلی: **v1.6** —
-`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6`
+نسخهٔ فعلی: **v1.6.1** —
+`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1`
 
 ---
 
@@ -53,7 +53,7 @@
 | پردازنده | ۲ × Cortex-A75 + ۶ × Cortex-A55 |
 | کرنل | 6.6.144 GKI، `android15-6.6` |
 | فریمور پایه | `A145PXXUEDZJ2` |
-| رشتهٔ نسخهٔ کرنل | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6` |
+| رشتهٔ نسخهٔ کرنل | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1` |
 | boot image | ۳۲ مگابایت، هدر v4، فوتر AVB (`SHA256_RSA4096`، کلید تست AOSP) |
 | نوع بیلد | KernelSU `v3.3.1` (نسخهٔ `32680`)، بیلد user |
 
@@ -91,6 +91,14 @@ KernelSU داخل خود کرنل کامپایل شده است.
 - **گیت ABI در CI**: CRC نمادهای صادرشده در هر بیلد با نسخهٔ سالم v1.0 مقایسه می‌شود؛
   کرنلی که ماژول‌های استوک vendor را رد کند اصلاً منتشر نمی‌شود.
 - **فرکانس‌های استوک CPU** — بدون اورکلاک و بدون تغییر ولتاژ (پایین‌تر توضیح داده شده).
+
+نسخهٔ v1.6.1 دو ایراد کوچک را روی v1.6 برطرف میکند: زون حرارتی `mtktsflash`
+(ترمیستور USB/فلش) دیگر مقدار اشباع ۱۲۵ درجهٔ ADC را گزارش نمیدهد که میتوانست
+منجر به throttling بیهوده و قطع شارژ ۷۰ درجه شود؛ همچنین پیشفرض کرنل به TCP BBR
+و fq_codel تغییر یافت. این فیلتر در هستهٔ توکار GKI قرار دارد، چون درایور حرارتی
+MTK یک ماژول ازپیشساختهٔ `/vendor` است و بیلد فقط-boot نمیتواند آن را تغییر دهد.
+حداکثر فرکانس CPU مانند v1.6 زیر ۷۵ درجه ثابت میماند و baseline KMI تغییری
+نکرده است.
 
 نسخهٔ v1.6 کرنل را روی ریلیز جدیدتر ACK بازنشانی می‌کند — لینوکس 6.6.144
 (`android15-6.6.144_r00`)، فریمور `A145PXXUEDZJ2` — با همان مجموعهٔ امکانات v1.5.
@@ -197,7 +205,7 @@ su -c 'lsmod | wc -l; lsmod | head'
   (`android15-8-abA145PXXUEDZJ2-4k`) و فقط `-behi-vX.Y` را اضافه می‌کند؛
 - گزینه‌های شکنندهٔ ABI را فعال نمی‌کند (`NF_TABLES*`، `KSM`، `VXLAN`، `IPVLAN`،
   `NF_CONNTRACK_LABELS`، `LRU_GEN`، `CFS_BANDWIDTH`، `CGROUP_PIDS` و…)؛
-- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.6.txt` اجرا
+- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.6.1.txt` اجرا
   می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود. بیلاین v1.6
   همان v1.5 است که تغییرات غیر‌ABI دلتای ACK ‏6.6.118 → 6.6.144 از پیش در آن
   اعمال شده؛ هیچ‌کدام جزو ABI ‏GKI نیستند.
@@ -303,7 +311,7 @@ BOOT_PARTITION_SIZE=33554432 \
 | `.github/workflows/build.yml` | CI کامل: ابزارها، پچ‌ها، KernelSU، گیت‌های config، بیلد، بسته‌بندی و انتشار |
 | `kernel/` | درخت ماژول‌های دستگاه (`kernel_device_modules-6.6`) و ورودی بیلد Kleaf/Bazel |
 | `kernel-6.6/` | سورس کرنل GKI (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.6.txt` | baseline سالم CRC نمادهای صادرشده (v1.5 با اعمال تغییرات دلتای 6.6.144) |
+| `configs/kmi-baseline-v1.6.1.txt` | baseline سالم CRC نمادهای صادرشده (v1.5 با اعمال تغییرات دلتای 6.6.144) |
 | `configs/stock-a145pxxuedzj2.config` | تنظیمات مرجع استوک |
 | `scripts/kmi_check.py` | گیت ABI که در CI اجرا می‌شود |
 | `scripts/build_boot_image.sh` | سازندهٔ boot image ۳۲ مگابایتی + فوتر AVB |
