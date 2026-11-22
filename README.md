@@ -92,16 +92,20 @@ compiled into the kernel itself.
 - **ABI guard in CI**: exported symbol CRCs are compared against the known-good
   v1.0 baseline on every build, so a kernel that would reject stock vendor
   modules cannot be released.
-- **Stock CPU clocks** — no overclock, no voltage changes (see below).
+- **Stock CPU clocks** — no overclock, no voltage changes. `scaling_max_freq`
+  is pinned to the hardware maximum below 75 C (see [CPU clocks](#cpu-clocks)).
+- **Network defaults** — TCP BBR with fq_codel, enabled at build time.
 
 v1.6.1 fixes two small issues on top of v1.6: the MTK `mtktsflash`
 (USB/flash thermistor) zone no longer reports the bogus 125 C ADC saturation
-value that could cause needless throttling and a spurious 70 C charging cutoff.
-`scaling_max_freq` is now pinned to the hardware maximum while the CPU is below
-75 C (the MTK ATM/PPM adaptive limit otherwise makes it oscillate at 53-63 C);
-above 75 C normal thermal mitigation is untouched. The kernel also defaults to
-TCP BBR and fq_codel. Both fixes live in the built-in GKI kernel because the
-MediaTek drivers are prebuilt `/vendor` modules. The KMI baseline is unchanged.
+value to sysfs and `vbus_ctrl` (so the spurious 70 C charging cutoff no longer
+trips). `scaling_max_freq` is now pinned to the hardware maximum while the CPU
+is below 75 C — the MTK ATM/PPM adaptive limit otherwise makes it oscillate at
+53-63 C — while above 75 C normal thermal mitigation is untouched. The kernel
+also defaults to TCP BBR and fq_codel. Both fixes live in the built-in GKI
+kernel because the MediaTek drivers are prebuilt `/vendor` modules. The KMI
+baseline is unchanged. `scaling_min_freq` is deliberately left alone, so the
+stock Input Booster touch boost still works.
 
 v1.6 rebases the kernel onto the newer ACK release — Linux 6.6.144
 (`android15-6.6.144_r00`), firmware `A145PXXUEDZJ2` — with the same feature set as
@@ -151,7 +155,7 @@ flashing can take a few minutes.
 
 ```sh
 adb shell uname -r
-# 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6
+# 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1
 ```
 
 With root:
@@ -165,6 +169,28 @@ Expected CPU limits (stock clocks):
 ```
 /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq:1800000
 /sys/devices/system/cpu/cpufreq/policy6/cpuinfo_max_freq:2000000
+```
+
+Verify the v1.6.1 fixes:
+
+```sh
+# Bogus 125 C flash thermistor reading is filtered (expect 25000)
+su -c 'for z in /sys/class/thermal/thermal_zone*; do \
+  [ "$(cat $z/type)" = mtktsflash ] && cat $z/temp; done'
+
+# Charging control sees the sanitized value (expect "mtktsusb = 25")
+su -c 'dmesg | grep update_usb_connector_state | tail -1'
+
+# max frequency stays pinned below 75 C (2 minutes, expect no dips)
+su -c 'for i in $(seq 1 120); do \
+  printf "%s %s %s\n" "$(date +%T)" \
+  "$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq)" \
+  "$(cat /sys/devices/system/cpu/cpufreq/policy6/scaling_max_freq)"; sleep 1; done'
+
+# Network defaults
+su -c 'sysctl net.ipv4.tcp_congestion_control net.core.default_qdisc'
+# net.ipv4.tcp_congestion_control = bbr
+# net.core.default_qdisc = fq_codel
 ```
 
 Check that stock vendor modules loaded (Wi-Fi, GPS, FM, …):
@@ -194,6 +220,13 @@ These are the stock values for the G75 (CPU level 6) OPP table used by the
 SM-A145P. The experimental overclock that was tested in v1.4-oc was dropped from
 the project and is not part of any release.
 
+Below 75 C in the `mtktscpu` thermal zone, `scaling_max_freq` is clamped to
+`cpuinfo.max_freq` in the GKI cpufreq core. MediaTek's ATM cooler still requests
+adaptive power limits around 53-63 C, but they no longer reach sysfs — so the
+maximum stays at 1.8/2.0 GHz instead of oscillating. Above 75 C the clamp is
+removed and normal thermal throttling applies. `scaling_min_freq` is **not**
+clamped: the stock Input Booster touch boost may still raise it for a moment.
+
 ## ABI compatibility with stock vendor modules
 
 The device loads hundreds of prebuilt modules from `/vendor` and `/vendor_dlkm`.
@@ -211,9 +244,10 @@ This project therefore:
 - refuses to enable ABI-breaking options (`NF_TABLES*`, `KSM`, `VXLAN`, `IPVLAN`,
   `NF_CONNTRACK_LABELS`, `LRU_GEN`, `CFS_BANDWIDTH`, `CGROUP_PIDS`, …);
 - runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.6.1.txt` on every
-  build and fails if any exported CRC differs or disappears. The v1.6 baseline
-  is the v1.5 one with the ACK 6.6.118 -> 6.6.144 delta's non-ABI changes
-  pre-applied; none of them is part of the GKI ABI.
+  build and fails if any exported CRC differs or disappears. The v1.6.1
+  baseline is an unchanged copy of v1.6, which is the v1.5 one with the ACK
+  6.6.118 -> 6.6.144 delta's non-ABI changes pre-applied; none of them is part
+  of the GKI ABI.
 
 ### Why `--cpus` and `--pids-limit` are not supported
 
@@ -334,6 +368,15 @@ intact.
 from `/vendor`; if they are rejected, the boot image and the firmware base do not
 match. Make sure the device runs `A145PXXUEDZJ2` and that the boot image comes
 from this project's release.
+
+**`scaling_max_freq` sometimes dips.** Below 75 C it should stay at 1.8/2.0 GHz
+even when the log shows `set_adaptive_cpu_power_limit` at 53-63 C — that is the
+MediaTek ATM cooler requesting a limit that the GKI clamp now ignores. If the
+`mtktscpu` zone reads 75 C or above, throttling is expected and intentional.
+
+**Thermal zone reports 125 C for `mtktsflash`.** That is the raw vendor module
+reading; it is expected in `dmesg`, but sysfs and `vbus_ctrl` see `25000`
+instead, so charging is no longer cut off at a bogus 70 C.
 
 **KernelSU manager says "unsupported".** Use KernelSU manager `v3.3.1` or newer.
 The kernel reports KernelSU version `32680`.
