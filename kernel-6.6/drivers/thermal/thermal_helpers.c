@@ -22,6 +22,32 @@
 #include "thermal_core.h"
 #include "thermal_trace.h"
 
+/*
+ * On this board the "mtktsflash" (USB/flash thermistor) sensor can be left
+ * floating, which makes the MediaTek NTC conversion saturate at 125 C.
+ * That bogus endpoint is consumed by the thermal governor and by
+ * vbus_ctrl.c (70 C charging cutoff), so reject readings outside a
+ * physically plausible range and keep the last valid sample.
+ *
+ * The vendor thermal_monitor.ko is prebuilt and shipped in /vendor, so the
+ * fix has to live here, in the built-in GKI thermal core, where every
+ * consumer obtains the temperature.
+ */
+static void behi_sanitize_flash_temp(struct thermal_zone_device *tz, int *temp)
+{
+	static int last_valid = 25000;	/* 25 C, matches vbus_ctrl's fallback */
+
+	if (strcmp(tz->type, "mtktsflash"))
+		return;
+
+	if (*temp > 100000 || *temp < -30000) {
+		*temp = last_valid;
+		return;
+	}
+
+	last_valid = *temp;
+}
+
 int get_tz_trend(struct thermal_zone_device *tz, int trip_index)
 {
 	struct thermal_trip *trip = tz->trips ? &tz->trips[trip_index] : NULL;
@@ -112,6 +138,8 @@ int __thermal_zone_get_temp(struct thermal_zone_device *tz, int *temp)
 
 	if (ret)
 		dev_dbg(&tz->device, "Failed to get temperature: %d\n", ret);
+	else
+		behi_sanitize_flash_temp(tz, temp);
 
 	return ret;
 }

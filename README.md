@@ -97,7 +97,9 @@ compiled into the kernel itself.
 v1.6.1 fixes two small issues on top of v1.6: the MTK `mtktsflash`
 (USB/flash thermistor) zone no longer reports the bogus 125 C ADC saturation
 value that could cause needless throttling and a spurious 70 C charging cutoff,
-and the build now defaults to TCP BBR, fq_codel and zram/lz4. CPU max frequency
+and the kernel now defaults to TCP BBR and fq_codel. The filter lives in the
+built-in GKI thermal core because the MTK thermal driver is a prebuilt
+`/vendor` module that a boot-only kernel build cannot change. CPU max frequency
 remains pinned below 75 C as in v1.6, and the KMI baseline is unchanged.
 
 v1.6 rebases the kernel onto the newer ACK release — Linux 6.6.144

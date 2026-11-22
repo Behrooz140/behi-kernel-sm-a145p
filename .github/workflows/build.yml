@@ -516,8 +516,9 @@ jobs:
             are discarded and the last valid temperature is kept. This also
             stops the spurious 70 C VBUS charging cutoff.
           - Defaults: TCP BBR is now the default congestion control and
-            fq_codel the default queuing discipline; zram uses lz4 instead of
-            lzo-rle. These are build-time defaults, no setup is required.
+            fq_codel the default queuing discipline. Both are built into the
+            kernel, so no setup is required. (zram remains the stock vendor
+            module and keeps its lzo-rle algorithm.)
 
           ## Features
 
