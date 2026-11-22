@@ -88,6 +88,17 @@ static int polling_factor2 = 10000;
 
 #define mtktsusb_TEMP_CRIT 60000	/* 60.000 degree Celsius */
 
+/*
+ * The NTC lookup table saturates at 125 C when the thermistor/ADC is
+ * disconnected (near-zero voltage).  That endpoint is not a real
+ * temperature: it is fed to the thermal governor and to vbus_ctrl.c,
+ * which applies its 70 C charging cutoff.  Reject readings outside a
+ * physically plausible USB/flash range and keep the last good sample.
+ */
+#define BEHI_TSUSB_TEMP_MIN	(-30000)	/* -30 C */
+#define BEHI_TSUSB_TEMP_MAX	100000		/* 100 C */
+#define BEHI_TSUSB_TEMP_DEFAULT	25000		/* same as vbus_ctrl's fallback */
+
 #define mtktsusb_dprintk(fmt, args...)   \
 do {                                    \
 	if (mtktsusb_debug_log) {                \
@@ -710,6 +721,8 @@ static DEFINE_MUTEX(BTSUSB_lock);
 int mtktsusb_get_hw_temp(void)
 {
 	int t_ret = 0;
+	static int last_valid_temp = BEHI_TSUSB_TEMP_DEFAULT;
+	static bool invalid_logged;
 
 	mutex_lock(&BTSUSB_lock);
 
@@ -721,6 +734,18 @@ int mtktsusb_get_hw_temp(void)
 #endif
 
 	mutex_unlock(&BTSUSB_lock);
+
+	if (t_ret > BEHI_TSUSB_TEMP_MAX || t_ret < BEHI_TSUSB_TEMP_MIN) {
+		if (!invalid_logged) {
+			mtktsusb_printk("drop invalid T_tsusb=%d, keep %d\n",
+					t_ret, last_valid_temp);
+			invalid_logged = true;
+		}
+		t_ret = last_valid_temp;
+	} else {
+		last_valid_temp = t_ret;
+		invalid_logged = false;
+	}
 
 	if (t_ret > 40000)	/* abnormal high temp */
 		mtktsusb_printk("T_tsusb=%d\n", t_ret);

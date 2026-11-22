@@ -20,8 +20,8 @@ The release is a **single boot image**. There are no KernelSU modules, no
 `vendor_dlkm` changes and nothing to install inside Android: flash `boot`, reboot,
 done.
 
-Current release: **v1.6** —
-`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6`
+Current release: **v1.6.1** —
+`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1`
 
 ---
 
@@ -54,7 +54,7 @@ Current release: **v1.6** —
 | CPU | 2 × Cortex-A75 + 6 × Cortex-A55 |
 | Kernel | 6.6.144 GKI, `android15-6.6` |
 | Base firmware | `A145PXXUEDZJ2` |
-| Kernel release string | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6` |
+| Kernel release string | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1` |
 | Boot image | 32 MiB, header v4, AVB hash footer (`SHA256_RSA4096`, AOSP test key) |
 | Build variant | KernelSU `v3.3.1` (version `32680`), user build |
 
@@ -93,6 +93,12 @@ compiled into the kernel itself.
   v1.0 baseline on every build, so a kernel that would reject stock vendor
   modules cannot be released.
 - **Stock CPU clocks** — no overclock, no voltage changes (see below).
+
+v1.6.1 fixes two small issues on top of v1.6: the MTK `mtktsflash`
+(USB/flash thermistor) zone no longer reports the bogus 125 C ADC saturation
+value that could cause needless throttling and a spurious 70 C charging cutoff,
+and the build now defaults to TCP BBR, fq_codel and zram/lz4. CPU max frequency
+remains pinned below 75 C as in v1.6, and the KMI baseline is unchanged.
 
 v1.6 rebases the kernel onto the newer ACK release — Linux 6.6.144
 (`android15-6.6.144_r00`), firmware `A145PXXUEDZJ2` — with the same feature set as
@@ -201,7 +207,7 @@ This project therefore:
   (`android15-8-abA145PXXUEDZJ2-4k`) and only appends `-behi-vX.Y`;
 - refuses to enable ABI-breaking options (`NF_TABLES*`, `KSM`, `VXLAN`, `IPVLAN`,
   `NF_CONNTRACK_LABELS`, `LRU_GEN`, `CFS_BANDWIDTH`, `CGROUP_PIDS`, …);
-- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.6.txt` on every
+- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.6.1.txt` on every
   build and fails if any exported CRC differs or disappears. The v1.6 baseline
   is the v1.5 one with the ACK 6.6.118 -> 6.6.144 delta's non-ABI changes
   pre-applied; none of them is part of the GKI ABI.
@@ -309,7 +315,7 @@ then an AVB hash footer sized to the 32 MiB `boot` partition.
 | `.github/workflows/build.yml` | Full CI: toolchain, patches, KernelSU, config gates, build, packaging, release |
 | `kernel/` | Device kernel modules tree (`kernel_device_modules-6.6`) and the Kleaf/Bazel build entrypoint |
 | `kernel-6.6/` | GKI kernel source (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.6.txt` | Known-good exported symbol CRC baseline (v1.5 adjusted for the 6.6.144 delta) |
+| `configs/kmi-baseline-v1.6.1.txt` | Known-good exported symbol CRC baseline (v1.5 adjusted for the 6.6.144 delta) |
 | `configs/stock-a145pxxuedzj2.config` | Reference stock configuration |
 | `scripts/kmi_check.py` | ABI gate used by CI |
 | `scripts/build_boot_image.sh` | 32 MiB boot image + AVB footer builder |

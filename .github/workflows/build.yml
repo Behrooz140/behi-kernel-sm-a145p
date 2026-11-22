@@ -29,7 +29,7 @@ env:
   # Base firmware release must stay identical to stock so the vermagic stamp
   # matches the prebuilt /vendor modules. The user-visible release string adds
   # the "behi" branding and the package version at the end:
-  # 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6
+  # 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1
   #
   # Cutting a new release (every kernel update):
   #   1. bump CONFIG_LOCALVERSION ("-4k-behi-vX.Y") in
@@ -424,7 +424,7 @@ jobs:
           python3 scripts/kmi_check.py verify \
             --image "$IMAGE" \
             --system-map "$SYSTEM_MAP" \
-            --baseline configs/kmi-baseline-v1.6.txt
+            --baseline configs/kmi-baseline-v${VERSION}.txt
 
           KERNEL_RELEASE="$(strings "$IMAGE" | sed -n 's/^Linux version \([^ ]*\) .*/\1/p' | head -n1)"
           echo "Detected kernel release: $KERNEL_RELEASE"
@@ -509,6 +509,16 @@ jobs:
           - \`A145P-Kernel-v${VERSION}-Odin.tar.md5\` — Odin AP slot package containing \`boot.img\`
           - \`build-info.txt\`, \`SHA256SUMS\`
 
+          ## Changes in 1.6.1
+
+          - Thermal: the MTK \`mtktsflash\` (USB/flash thermistor) zone no longer
+            reports the bogus 125 C ADC saturation value; implausible readings
+            are discarded and the last valid temperature is kept. This also
+            stops the spurious 70 C VBUS charging cutoff.
+          - Defaults: TCP BBR is now the default congestion control and
+            fq_codel the default queuing discipline; zram uses lz4 instead of
+            lzo-rle. These are build-time defaults, no setup is required.
+
           ## Features
 
           - KernelSU ${KSU_TAG} (version $((30000 + KSU_COMMITS)))
@@ -525,7 +535,7 @@ jobs:
             (no \`.ko\` files are shipped, so USB-serial adapters need a module build)
           - Kernel stack offset randomization
           - ABI guard: exported symbol CRCs are compared with a known-good
-            baseline on every build (v1.6 = v1.5 adjusted for the 6.6.118 ->
+            baseline on every build (v1.6+ = v1.5 adjusted for the 6.6.118 ->
             6.6.144 ACK delta's non-ABI changes)
 
           ## Branding
