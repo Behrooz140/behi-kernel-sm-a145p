@@ -315,13 +315,13 @@ jobs:
           export BUILD_CONFIG="../out/target/product/a14m/obj/KERNEL_OBJ/build.config"
           export OUT_DIR="../out/target/product/a14m/obj/KLEAF_OBJ"
           export DIST_DIR="../out/target/product/a14m/obj/KLEAF_OBJ/dist"
-          export DEFCONFIG_OVERLAYS="mt6768_overlay.config o22.config a145p_advanced.config"
+          export DEFCONFIG_OVERLAYS="mt6768_overlay.config o22.config a145p_advanced.config halium_ut.config"
           export PROJECT="mgk_64_k66"
           export MODE="user"
 
           python3 "${DEVICE_MODULES_DIR}/scripts/gen_build_config.py" \
             --kernel-defconfig mediatek-bazel_defconfig \
-            --kernel-defconfig-overlays "mt6768_overlay.config o22.config a145p_advanced.config" \
+            --kernel-defconfig-overlays "mt6768_overlay.config o22.config a145p_advanced.config halium_ut.config" \
             --kernel-build-config-overlays "" \
             -m user -o "${BUILD_CONFIG}"
 
@@ -377,6 +377,16 @@ jobs:
           grep -q "^CONFIG_LOCALVERSION=\"-4k-behi-v${VERSION}\"" "$KCONFIG" || {
             echo "ERROR: CONFIG_LOCALVERSION must be -4k-behi-v${VERSION}"; exit 1; }
           echo "KSU/SYSVIPC/namespaces enabled; SIG_PROTECT off; LOCALVERSION=-4k-behi-v${VERSION}"
+
+          echo "=== Halium / Ubuntu Touch sanity check ==="
+          for opt in CONFIG_ASHMEM CONFIG_ANDROID_BINDER_IPC CONFIG_NET_NS CONFIG_UTS_NS \
+                     CONFIG_DEVTMPFS CONFIG_OVERLAY_FS CONFIG_BLK_DEV_LOOP \
+                     CONFIG_TMPFS_POSIX_ACL CONFIG_TMPFS_XATTR CONFIG_MODULES; do
+            grep -q "^${opt}=y" "$KCONFIG" || { echo "ERROR: ${opt} is not enabled in $KCONFIG"; exit 1; }
+          done
+          grep -q '^CONFIG_ANDROID_BINDER_DEVICES="binder,hwbinder,vndbinder"$' "$KCONFIG" || {
+            echo "ERROR: all three binder devices must be enabled"; exit 1; }
+          echo "Halium fragment options present"
 
           echo "=== Advanced feature sanity check ==="
           for opt in \

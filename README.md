@@ -7,6 +7,12 @@
 ![KernelSU](https://img.shields.io/badge/KernelSU-v3.3.1-orange)
 ![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-sm-a145p?label=release)
 
+> **Ubuntu Touch test branch.** This branch (`bump/ubuntu-touch-halium-6.6`) adds
+> `halium_ut.config` on top of v1.6.1 for the
+> [a14m Ubuntu Touch port](https://github.com/Behrooz140/ubuntu-touch-a14m).
+> CI uploads a **test artifact only** and never publishes a release. `main`
+> remains the stable v1.6.1 kernel.
+
 A personalised Android 15 GKI kernel (Linux 6.6.144) for the **Samsung Galaxy A14 4G,
 exact model SM-A145P** (`a14m`, MediaTek Helio G80 / MT6769V), built for KernelSU
 and container workloads such as Droidspaces.

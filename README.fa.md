@@ -7,6 +7,12 @@
 ![KernelSU](https://img.shields.io/badge/KernelSU-v3.3.1-orange)
 ![release](https://img.shields.io/github/v/release/Behrooz140/behi-kernel-sm-a145p?label=release)
 
+> **برنچ تست Ubuntu Touch.** این برنچ (`bump/ubuntu-touch-halium-6.6`) فایل
+> `halium_ut.config` را روی v1.6.1 اضافه میکند تا برای
+> [پورت Ubuntu Touch a14m](https://github.com/Behrooz140/ubuntu-touch-a14m) استفاده شود.
+> CI فقط یک **ارتifact تست** آپلود میکند و Release منتشر نمیکند؛ `main` همان کرنل
+> پایدار v1.6.1 باقی میماند.
+
 یک کرنل شخصی‌سازی‌شدهٔ GKI اندروید ۱۵ (لینوکس 6.6.144) برای **سامسونگ Galaxy A14 4G،
 مدل دقیق SM-A145P** (`a14m`، مدیاتک Helio G80 / MT6769V) که برای KernelSU و کارهای
 کانتینری مثل Droidspaces ساخته شده است.
