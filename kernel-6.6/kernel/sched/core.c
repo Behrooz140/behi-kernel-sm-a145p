@@ -1377,8 +1377,9 @@ static void set_load_weight(struct task_struct *p, bool update_load)
  */
 static DEFINE_MUTEX(uclamp_mutex);
 
-/* Max allowed minimum utilization */
-static unsigned int __maybe_unused sysctl_sched_uclamp_util_min = SCHED_CAPACITY_SCALE;
+/* Max allowed minimum utilization.  Keep at 0: the vendor boot perf tune
+ * raises it to 1024 and the ported A34 system never resets it. */
+static unsigned int __maybe_unused sysctl_sched_uclamp_util_min = 0;
 
 /* Max allowed maximum utilization */
 static unsigned int __maybe_unused sysctl_sched_uclamp_util_max = SCHED_CAPACITY_SCALE;
@@ -1883,6 +1884,15 @@ static int sysctl_sched_uclamp_handler(struct ctl_table *table, int write,
 	if (!write)
 		return 0;
 
+	/*
+	 * Ignore the vendor boot perf tune (1024) for the global minimum.
+	 * Otherwise every CFS task runs with uclamp.min=100% forever on the
+	 * ported A34 system and the CPUs never downclock.
+	 */
+	if (table->data == &sysctl_sched_uclamp_util_min &&
+	    sysctl_sched_uclamp_util_min > 0)
+		sysctl_sched_uclamp_util_min = 0;
+
 	if (sysctl_sched_uclamp_util_min > sysctl_sched_uclamp_util_max ||
 	    sysctl_sched_uclamp_util_max > SCHED_CAPACITY_SCALE	||
 	    sysctl_sched_uclamp_util_min_rt_default > SCHED_CAPACITY_SCALE) {
@@ -2086,7 +2096,6 @@ static void __init init_uclamp_rq(struct rq *rq)
 
 static void __init init_uclamp(void)
 {
-	struct uclamp_se uc_max = {};
 	enum uclamp_id clamp_id;
 	int cpu;
 
@@ -2098,13 +2107,13 @@ static void __init init_uclamp(void)
 			      uclamp_none(clamp_id), false);
 	}
 
-	/* System defaults allow max clamp values for both indexes */
-	uclamp_se_set(&uc_max, uclamp_none(UCLAMP_MAX), false);
+	/* No implicit 100% minimum; keep the full maximum clamp. */
 	for_each_clamp_id(clamp_id) {
-		uclamp_default[clamp_id] = uc_max;
+		uclamp_se_set(&uclamp_default[clamp_id],
+			      uclamp_none(clamp_id), false);
 #ifdef CONFIG_UCLAMP_TASK_GROUP
-		root_task_group.uclamp_req[clamp_id] = uc_max;
-		root_task_group.uclamp[clamp_id] = uc_max;
+		root_task_group.uclamp_req[clamp_id] = uclamp_default[clamp_id];
+		root_task_group.uclamp[clamp_id] = uclamp_default[clamp_id];
 #endif
 	}
 }

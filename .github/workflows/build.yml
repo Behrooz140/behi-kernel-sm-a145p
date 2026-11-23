@@ -29,7 +29,7 @@ env:
   # Base firmware release must stay identical to stock so the vermagic stamp
   # matches the prebuilt /vendor modules. The user-visible release string adds
   # the "behi" branding and the package version at the end:
-  # 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1
+  # 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.2
   #
   # Cutting a new release (every kernel update):
   #   1. bump CONFIG_LOCALVERSION ("-4k-behi-vX.Y") in

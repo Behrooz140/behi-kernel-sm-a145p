@@ -20,8 +20,8 @@ The release is a **single boot image**. There are no KernelSU modules, no
 `vendor_dlkm` changes and nothing to install inside Android: flash `boot`, reboot,
 done.
 
-Current release: **v1.6.1** —
-`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1`
+Current release: **v1.6.2** —
+`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.2`
 
 ---
 
@@ -54,7 +54,7 @@ Current release: **v1.6.1** —
 | CPU | 2 × Cortex-A75 + 6 × Cortex-A55 |
 | Kernel | 6.6.144 GKI, `android15-6.6` |
 | Base firmware | `A145PXXUEDZJ2` |
-| Kernel release string | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1` |
+| Kernel release string | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.2` |
 | Boot image | 32 MiB, header v4, AVB hash footer (`SHA256_RSA4096`, AOSP test key) |
 | Build variant | KernelSU `v3.3.1` (version `32680`), user build |
 
@@ -95,6 +95,12 @@ compiled into the kernel itself.
 - **Stock CPU clocks** — no overclock, no voltage changes. `scaling_max_freq`
   is pinned to the hardware maximum below 75 C (see [CPU clocks](#cpu-clocks)).
 - **Network defaults** — TCP BBR with fq_codel, enabled at build time.
+
+v1.6.2 makes the boot-time scheduler perf tune harmless for ported `system`
+images: `sched_pelt_multiplier` is capped at 1 and the global
+`sched_util_clamp_min` defaults to and stays at 0. This replaces the
+`a34_coolfix` Magisk module. KMI/vermagic and `scaling_min_freq` behaviour are
+unchanged.
 
 v1.6.1 fixes two small issues on top of v1.6: the MTK `mtktsflash`
 (USB/flash thermistor) zone no longer reports the bogus 125 C ADC saturation

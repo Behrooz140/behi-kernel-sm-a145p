@@ -492,6 +492,15 @@ int sched_pelt_multiplier(struct ctl_table *table, int write, void *buffer,
 	if (!write)
 		goto done;
 
+	/*
+	 * Vendor init.rc bumps this to 4 for a boot-time perf tune.  The
+	 * ported A34 system never resets it, so PELT converges 4x faster and
+	 * the scheduler keeps asking for high frequencies.  Ignore anything
+	 * above 1 and keep the native 32ms PELT window.
+	 */
+	if (sysctl_sched_pelt_multiplier > 1)
+		sysctl_sched_pelt_multiplier = 1;
+
 	trace_android_vh_sched_pelt_multiplier(old, sysctl_sched_pelt_multiplier, &ret);
 	if (ret)
 		goto undo;
