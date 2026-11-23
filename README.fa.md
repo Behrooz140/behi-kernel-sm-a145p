@@ -242,8 +242,8 @@ su -c 'lsmod | wc -l; lsmod | head'
   (`android15-8-abA145PXXUEDZJ2-4k`) و فقط `-behi-vX.Y` را اضافه می‌کند؛
 - گزینه‌های شکنندهٔ ABI را فعال نمی‌کند (`NF_TABLES*`، `KSM`، `VXLAN`، `IPVLAN`،
   `NF_CONNTRACK_LABELS`، `LRU_GEN`، `CFS_BANDWIDTH`، `CGROUP_PIDS` و…)؛
-- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.6.1.txt` اجرا
-  می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود. بیلاین v1.6.1
+- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.6.2.txt` اجرا
+  می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود. بیلاین v1.6.2
   کپی بدون تغییری از v1.6 است و آن هم همان v1.5 است که تغییرات غیر‌ABI دلتای
   ACK ‏6.6.118 → 6.6.144 از پیش در آن
   اعمال شده؛ هیچ‌کدام جزو ABI ‏GKI نیستند.
@@ -349,7 +349,7 @@ BOOT_PARTITION_SIZE=33554432 \
 | `.github/workflows/build.yml` | CI کامل: ابزارها، پچ‌ها، KernelSU، گیت‌های config، بیلد، بسته‌بندی و انتشار |
 | `kernel/` | درخت ماژول‌های دستگاه (`kernel_device_modules-6.6`) و ورودی بیلد Kleaf/Bazel |
 | `kernel-6.6/` | سورس کرنل GKI (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.6.1.txt` | baseline سالم CRC نمادهای صادرشده (v1.5 با اعمال تغییرات دلتای 6.6.144) |
+| `configs/kmi-baseline-v1.6.2.txt` | baseline سالم CRC نمادهای صادرشده (کپی بدون تغییر از v1.6.1) |
 | `configs/stock-a145pxxuedzj2.config` | تنظیمات مرجع استوک |
 | `scripts/kmi_check.py` | گیت ABI که در CI اجرا می‌شود |
 | `scripts/build_boot_image.sh` | سازندهٔ boot image ۳۲ مگابایتی + فوتر AVB |
