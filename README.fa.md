@@ -19,8 +19,8 @@
 بستهٔ انتشار **فقط یک boot image** است. هیچ ماژول KernelSU، هیچ تغییری در
 `vendor_dlkm` و هیچ نصب داخلی اندروید ندارد: `boot` را فلش می‌کنی، ریبوت، تمام.
 
-نسخهٔ فعلی: **v1.6.2** —
-`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.2`
+نسخهٔ فعلی: **v1.6.3** —
+`6.6.144-android15-8-abA145PXXSFDZK1-4k-behi-v1.6.3`
 
 ---
 
@@ -52,15 +52,15 @@
 | چیپست | MediaTek Helio G80 (MT6769V) |
 | پردازنده | ۲ × Cortex-A75 + ۶ × Cortex-A55 |
 | کرنل | 6.6.144 GKI، `android15-6.6` |
-| فریمور پایه | `A145PXXUEDZJ2` |
-| رشتهٔ نسخهٔ کرنل | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.2` |
-| boot image | ۳۲ مگابایت، هدر v4، فوتر AVB (`SHA256_RSA4096`، کلید تست AOSP) |
+| فریمور پایه | `A145PXXSFDZK1` |
+| رشتهٔ نسخهٔ کرنل | `6.6.144-android15-8-abA145PXXSFDZK1-4k-behi-v1.6.3` |
+| boot image | ۳۲ مگابایت، هدر v4 (اندروید ۱۵.۰.۰ / پچ ۲۰۲۶-۱۱)، فوتر AVB (`SHA256_RSA4096`، کلید تست AOSP) |
 | نوع بیلد | KernelSU `v3.3.1` (نسخهٔ `32680`)، بیلد user |
 
 رشتهٔ نسخهٔ کرنل، پایهٔ ACK که کرنل روی آن بازنشانی شده
-(`6.6.144-android15-8-abA145PXXUEDZJ2-4k`) را حمل می‌کند و برند شخصی و
+(`6.6.144-android15-8-abA145PXXSFDZK1-4k`) را حمل می‌کند و برند شخصی و
 نسخهٔ بسته را به انتهای آن اضافه می‌کند. نشانهٔ ABI ماژول (vermagic) عمداً روی مقدار
-**استوک** فریمور (`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) پین شده تا همهٔ
+**استوک** فریمور (`6.6.118-android15-8-abA145PXXSFDZK1-4k`) پین شده تا همهٔ
 ماژول‌های ازپیش‌ساختهٔ `/vendor` لود شوند؛ فقط رشتهٔ نمایشی تغییر کرده است.
 
 ## چه چیزی دریافت می‌کنید
@@ -88,11 +88,20 @@ KernelSU داخل خود کرنل کامپایل شده است.
   netfilter، و NAT/masquerade روی IPv6 برای کانتینرهای `--net=nat`.
 - **فایل‌سیستم‌ها**: SquashFS با XZ/LZ4/ZSTD، NFSv4.2، SMB/CIFS.
 - **امنیت/سخت‌سازی**: تصادفی‌سازی آفست استک کرنل.
-- **گیت ABI در CI**: CRC نمادهای صادرشده در هر بیلد با نسخهٔ سالم v1.0 مقایسه می‌شود؛
+- **گیت ABI در CI**: CRC نمادهای صادرشده در هر بیلد با نسخهٔ سالم v1.6.3 مقایسه می‌شود؛
   کرنلی که ماژول‌های استوک vendor را رد کند اصلاً منتشر نمی‌شود.
-- **فرکانس‌های استوک CPU** — بدون اورکلاک و بدون تغییر ولتاژ. `scaling_max_freq`
-  تا ۷۵ درجه روی حداکثر سختافزاری قفل میشود (بخش [فرکانس CPU](#فرکانس-cpu)).
+- **فرکانس‌های استوک CPU** — بدون اورکلاک و بدون تغییر ولتاژ. `scaling_min_freq`
+  روی کمترین فرکانس سختافزاری قفل است و `scaling_max_freq` تا ۷۵ درجه روی
+  حداکثر سختافزاری (بخش [فرکانس CPU](#فرکانس-cpu)).
 - **پیشفرض شبکه** — TCP BBR همراه fq_codel، فعالشده در زمان بیلد.
+
+نسخهٔ v1.6.3 `scaling_min_freq` را در هستهٔ GKI cpufreq روی کمترین فرکانس
+سختافزاری قفل میکند (۵۰۰ مگاهرتز برای little و ۸۵۰ مگاهرتز برای big). درخواستهای
+کمینهٔ Input Booster سامسونگ و `touch_boost` / `powerhal_cpu_ctrl` مدیاتک موقع
+لمس صفحه دیگر مینیموم را جابهجا نمیکنند. قفل ۷۵ درجهٔ `scaling_max_freq` و کاهش حرارتی تغییری نکردهاند. پایهٔ فریمور هم
+به `A145PXXSFDZK1` منتقل شد: رشتهٔ نسخه و vermagic با همان فریمور هماهنگاند و
+هدر بوت مقادیر استوک اندروید ۱۵.۰.۰ / پچ ۲۰۲۶-۱۱ را حفظ میکند. KMI بدون تغییر
+است.
 
 نسخهٔ v1.6.2 تنظیم عملکرد موقع بوت را برای ایمیجهای پورتشدهٔ `system` بیخطر
 میکند: `sched_pelt_multiplier` حداکثر 1 میماند و `sched_util_clamp_min` سراسری
@@ -130,7 +139,7 @@ fq_codel است. هردو پچ در هستهٔ توکار GKIاند چون در�
 - **بوت‌لودر آنلاک‌شده** (boot image با کلید تست عمومی AOSP امضا شده، نه کلید سامسونگ؛
   روی دستگاه آنلاک پذیرفته می‌شود).
 - **Odin** (ویندوز، یا Wine روی لینوکس) برای فلش بستهٔ AP.
-- فریمور پایهٔ **`A145PXXUEDZJ2`** توصیه می‌شود. vermagic روی همین پایه پین شده؛ روی
+- فریمور پایهٔ **`A145PXXSFDZK1`** لازم است. vermagic روی همین پایه پین شده؛ روی
   نسخه‌های دیگر فریمور ممکن است ماژول‌های `/vendor` عدم‌تطابق نسخه گزارش کنند.
 - مدیر KernelSU نسخهٔ **v3.3.1 یا جدیدتر** اگر روت می‌خواهی.
 - `adb` و `su` برای مراحل بررسی.
@@ -155,8 +164,12 @@ fq_codel است. هردو پچ در هستهٔ توکار GKIاند چون در�
 
 ```sh
 adb shell uname -r
-# 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1
+# 6.6.144-android15-8-abA145PXXSFDZK1-4k-behi-v1.6.3
 ```
+
+برای گزارش کامل هویت فریمور و vermagic، فایل `scripts/diag_firmware_header.sh` را
+به گوشی منتقل کن و `sh diag_firmware_header.sh` را اجرا کن؛ گزارش در
+`/sdcard/Download/` ذخیره میشود.
 
 با روت:
 
@@ -171,7 +184,7 @@ su -c 'uname -r; grep . /sys/devices/system/cpu/cpufreq/policy*/cpuinfo_max_freq
 /sys/devices/system/cpu/cpufreq/policy6/cpuinfo_max_freq:2000000
 ```
 
-بررسی تغییرات v1.6.1:
+بررسی تغییرات v1.6.3:
 
 ```sh
 # خواندن جعلی ۱۲۵ درجهٔ ترمیستور فلش فیلتر شده (انتظار: 25000)
@@ -186,6 +199,12 @@ su -c 'for i in $(seq 1 120); do \
   printf "%s %s %s\n" "$(date +%T)" \
   "$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq)" \
   "$(cat /sys/devices/system/cpu/cpufreq/policy6/scaling_max_freq)"; sleep 1; done'
+
+# کمینهٔ فرکانس هنگام لمس صفحه ثابت میماند (انتظار: 500000 و 850000)
+su -c 'for i in $(seq 1 60); do \
+  printf "%s %s %s\n" "$(date +%T)" \
+  "$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq)" \
+  "$(cat /sys/devices/system/cpu/cpufreq/policy6/scaling_min_freq)"; sleep 1; done'
 
 # پیشفرض شبکه
 su -c 'sysctl net.ipv4.tcp_congestion_control net.core.default_qdisc'
@@ -204,17 +223,17 @@ su -c 'lsmod | wc -l; lsmod | head'
 چون فقط پارتیشن `boot` عوض می‌شود، بازگشت یک فلش معمولی با Odin است:
 
 - boot image قبلی که کار می‌کرد را فلش کن، یا
-- فریمور کامل استوک `A145PXXUEDZJ2` را فلش کن (AP + BL + CP + CSC؛ برای حفظ
+- فریمور کامل استوک `A145PXXSFDZK1` را فلش کن (AP + BL + CP + CSC؛ برای حفظ
   داده‌ها از `HOME_CSC` استفاده کن).
 
 هیچ ماژول یا پارتیشن دیگری برای برگرداندن وجود ندارد.
 
 ## فرکانس CPU
 
-| خوشه | حداکثر فرکانس |
-|---|---|
-| little (۶ × Cortex-A55) | 1.8 GHz |
-| big (۲ × Cortex-A75) | 2.0 GHz |
+| خوشه | کمینهٔ فرکانس | حداکثر فرکانس |
+|---|---|---|
+| little (۶ × Cortex-A55) | 500 MHz | 1.8 GHz |
+| big (۲ × Cortex-A75) | 850 MHz | 2.0 GHz |
 
 این‌ها مقادیر استوک جدول OPP مربوط به G75 (سطح CPU 6) هستند که SM-A145P استفاده
 می‌کند. اورکلاک آزمایشی که در v1.4-oc تست شد از پروژه حذف شده و در هیچ ریلیزی نیست.
@@ -223,8 +242,10 @@ su -c 'lsmod | wc -l; lsmod | head'
 `cpuinfo.max_freq` قفل میشود. خنککنندهٔ ATM مدیاتک همچنان در حدود ۵۳–۶۳ درجه
 درخواست محدودیت توان میدهد، ولی دیگر به sysfs نمیرسد — پس حداکثر فرکانس به جای
 نوسان، روی ۱.۸/۲.۰ گیگاهرتز باقی میماند. بالای ۷۵ درجه قفل برداشته میشود و
-کاهش فرکانس حرارتی عادی اعمال میشود. `scaling_min_freq` **قفل نمیشود** و ممکن است
-به دلیل touch boost استوک Input Booster لحظهای بالا برود.
+کاهش فرکانس حرارتی عادی اعمال میشود. `scaling_min_freq` هم در همان هستهٔ توکار
+GKI روی `cpuinfo.min_freq` (۵۰۰/۸۵۰ مگاهرتز) قفل است، پس touch boostهای Input
+Booster سامسونگ و `touch_boost` مدیاتک دیگر نمیتوانند آنرا بالا ببرند. گاورنر
+همچنان میتواند هر فرکانسی را درون این محدوده انتخاب کند.
 
 ## سازگاری ABI با ماژول‌های استوک vendor
 
@@ -239,12 +260,14 @@ su -c 'lsmod | wc -l; lsmod | head'
 - `VERMAGIC_STRING` را در `kernel-6.6/include/linux/vermagic.h` دقیقاً روی مقدار
   استوک پین می‌کند؛
 - پایهٔ فریمور رشتهٔ نسخه را نگه می‌دارد
-  (`android15-8-abA145PXXUEDZJ2-4k`) و فقط `-behi-vX.Y` را اضافه می‌کند؛
+  (`android15-8-abA145PXXSFDZK1-4k`) و فقط `-behi-vX.Y` را اضافه می‌کند؛
 - گزینه‌های شکنندهٔ ABI را فعال نمی‌کند (`NF_TABLES*`، `KSM`، `VXLAN`، `IPVLAN`،
   `NF_CONNTRACK_LABELS`، `LRU_GEN`، `CFS_BANDWIDTH`، `CGROUP_PIDS` و…)؛
-- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.6.2.txt` اجرا
-  می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود. بیلاین v1.6.2
-  کپی بدون تغییری از v1.6 است و آن هم همان v1.5 است که تغییرات غیر‌ABI دلتای
+- در هر بیلد `scripts/kmi_check.py` را با `configs/kmi-baseline-v1.6.3.txt` اجرا
+  می‌کند و اگر هر CRC صادرشده فرق کند یا حذف شود، بیلد fail می‌شود. بیلاین v1.6.3
+  کپی بدون تغییری از v1.6.2 است (قفل cpufreq و بهروزرسانی پایهٔ فریمور/vermagic
+  بدون تغییر CRC). زنجیره تا
+  v1.6.1 و همان v1.5 است که تغییرات غیر‌ABI دلتای
   ACK ‏6.6.118 → 6.6.144 از پیش در آن
   اعمال شده؛ هیچ‌کدام جزو ABI ‏GKI نیستند.
 
@@ -349,10 +372,12 @@ BOOT_PARTITION_SIZE=33554432 \
 | `.github/workflows/build.yml` | CI کامل: ابزارها، پچ‌ها، KernelSU، گیت‌های config، بیلد، بسته‌بندی و انتشار |
 | `kernel/` | درخت ماژول‌های دستگاه (`kernel_device_modules-6.6`) و ورودی بیلد Kleaf/Bazel |
 | `kernel-6.6/` | سورس کرنل GKI (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.6.2.txt` | baseline سالم CRC نمادهای صادرشده (کپی بدون تغییر از v1.6.1) |
-| `configs/stock-a145pxxuedzj2.config` | تنظیمات مرجع استوک |
+| `configs/kmi-baseline-v1.6.3.txt` | baseline سالم CRC نمادهای صادرشده (کپی بدون تغییر از v1.6.2) |
+| `configs/stock-a145pxxuedzj2.config` | تنظیمات مرجع استوک (پایهٔ v1.6) |
 | `scripts/kmi_check.py` | گیت ABI که در CI اجرا می‌شود |
 | `scripts/build_boot_image.sh` | سازندهٔ boot image ۳۲ مگابایتی + فوتر AVB |
+| `scripts/diag_input_booster.sh` | اسکریپت تشخیصی روت برای پرش مینیموم موقع لمس |
+| `scripts/diag_firmware_header.sh` | گزارش روت از هویت فریمور و vermagic ماژولهای vendor |
 | `build_kernel.sh` | wrapper کوچک برای بیلد درخت دستگاه |
 
 ## عیب‌یابی
@@ -362,12 +387,17 @@ BOOT_PARTITION_SIZE=33554432 \
 
 **نبود Wi-Fi / GPS / FM یا سخت‌افزار دیگر.** این درایورها ماژول‌های ازپیش‌ساختهٔ
 `/vendor` هستند؛ اگر رد شوند یعنی boot image و پایهٔ فریمور با هم نمی‌خوانند. مطمئن
-شو دستگاه روی `A145PXXUEDZJ2` است و boot image از ریلیز همین پروژه آمده است.
+شو دستگاه روی `A145PXXSFDZK1` است و boot image از ریلیز همین پروژه آمده است.
 
 **گاهی `scaling_max_freq` پایین میرود.** زیر ۷۵ درجه باید روی ۱.۸/۲.۰ گیگاهرتز
 بماند، حتی اگر لاگ `set_adaptive_cpu_power_limit` در ۵۳–۶۳ درجه نشان دهد — این
 درخواست خنککنندهٔ مدیاتک است که قفل GKI آن را نادیده میگیرد. اگر زون `mtktscpu`
 بیش از ۷۵ درجه باشد، کاهش فرکانس طبیعی و موردانتظار است.
+
+**`scaling_min_freq` موقع لمس باز هم جابهجا میشود.** باید روی ۵۰۰/۸۵۰ مگاهرتز
+بماند؛ درخواستهای کمینهٔ Input Booster و `touch_boost` مدیاتک در هستهٔ GKI
+خنثی میشوند. اگر باز هم پرش دارد، دستگاه boot image ریلیز v1.6.3 (یا جدیدتر) را
+اجرا نمیکند.
 
 **زون حرارتی `mtktsflash` ۱۲۵ درجه نشان میدهد.** این همان خواندن خام ماژول
 استوک است و در `dmesg` طبیعی است؛ ولی sysfs و `vbus_ctrl` مقدار `25000` میبینند،
@@ -386,7 +416,7 @@ BOOT_PARTITION_SIZE=33554432 \
 - [Droidspaces](https://github.com/ravindu644/Droidspaces-OSS) از ravindu644 —
   پشتیبانی کانتینر و پچ SYSVIPC kABI.
 - ابزارهای `mkbootimg` و `avbtool` اندروید برای ساخت image و امضای AVB.
-- سامسونگ برای فریمور استوک `A145PXXUEDZJ2` و مدیاتک برای ماژول‌های vendor
+- سامسونگ برای فریمور استوک `A145PXXSFDZK1` و مدیاتک برای ماژول‌های vendor
   MT6769V که این کرنل با آن‌ها سازگار می‌ماند.
 
 ## سلب مسئولیت

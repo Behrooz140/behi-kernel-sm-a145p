@@ -82,6 +82,23 @@ static int __init behi_maxlock_init(void)
 }
 late_initcall(behi_maxlock_init);
 
+/*
+ * behi min-frequency lock.
+ *
+ * Samsung's Input Booster (input_booster_lkm) and MediaTek's touch_boost /
+ * powerhal_cpu_ctrl both raise scaling_min_freq through FREQ_QOS_MIN on
+ * touch.  Pin the minimum to the hardware floor so it stays constant no
+ * matter which vendor module is loaded.  cpufreq_set_policy() is the single
+ * point all min QoS requests funnel through, and this adds no exported
+ * symbol or structure change (KMI/vermagic stay untouched).
+ */
+static unsigned int behi_minlock_limit(unsigned int requested,
+				       unsigned int hw_min)
+{
+	(void)requested;
+	return hw_min;
+}
+
 /* Macros to iterate over CPU policies */
 #define for_each_suitable_policy(__policy, __active)			 \
 	list_for_each_entry(__policy, &cpufreq_policy_list, policy_list) \
@@ -2678,7 +2695,9 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 	 * PM QoS framework collects all the requests from users and provide us
 	 * the final aggregated value here.
 	 */
-	new_data.min = freq_qos_read_value(&policy->constraints, FREQ_QOS_MIN);
+	new_data.min = behi_minlock_limit(
+		freq_qos_read_value(&policy->constraints, FREQ_QOS_MIN),
+		policy->cpuinfo.min_freq);
 	new_data.max = behi_maxlock_limit(
 		freq_qos_read_value(&policy->constraints, FREQ_QOS_MAX),
 		policy->cpuinfo.max_freq);

@@ -20,8 +20,8 @@ The release is a **single boot image**. There are no KernelSU modules, no
 `vendor_dlkm` changes and nothing to install inside Android: flash `boot`, reboot,
 done.
 
-Current release: **v1.6.2** —
-`6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.2`
+Current release: **v1.6.3** —
+`6.6.144-android15-8-abA145PXXSFDZK1-4k-behi-v1.6.3`
 
 ---
 
@@ -53,15 +53,15 @@ Current release: **v1.6.2** —
 | SoC | MediaTek Helio G80 (MT6769V) |
 | CPU | 2 × Cortex-A75 + 6 × Cortex-A55 |
 | Kernel | 6.6.144 GKI, `android15-6.6` |
-| Base firmware | `A145PXXUEDZJ2` |
-| Kernel release string | `6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.2` |
-| Boot image | 32 MiB, header v4, AVB hash footer (`SHA256_RSA4096`, AOSP test key) |
+| Base firmware | `A145PXXSFDZK1` |
+| Kernel release string | `6.6.144-android15-8-abA145PXXSFDZK1-4k-behi-v1.6.3` |
+| Boot image | 32 MiB, header v4 (OS 15.0.0 / patch 2026-11), AVB hash footer (`SHA256_RSA4096`, AOSP test key) |
 | Build variant | KernelSU `v3.3.1` (version `32680`), user build |
 
 The kernel release string carries the ACK base it was rebased onto
-(`6.6.144-android15-8-abA145PXXUEDZJ2-4k`) and appends the personal brand and the
+(`6.6.144-android15-8-abA145PXXSFDZK1-4k`) and appends the personal brand and the
 package version. The module ABI stamp (vermagic) is pinned to the **stock**
-firmware value (`6.6.118-android15-8-abA145PXXUEDZJ2-4k`) so all prebuilt modules
+firmware value (`6.6.118-android15-8-abA145PXXSFDZK1-4k`) so all prebuilt modules
 under `/vendor` keep loading — only the user-visible string changed.
 
 ## What you get
@@ -90,11 +90,21 @@ compiled into the kernel itself.
 - **Storage / network filesystems**: SquashFS with XZ, LZ4 and ZSTD; NFSv4.2; SMB/CIFS.
 - **Hardening**: kernel stack offset randomization.
 - **ABI guard in CI**: exported symbol CRCs are compared against the known-good
-  v1.0 baseline on every build, so a kernel that would reject stock vendor
+  v1.6.3 baseline on every build, so a kernel that would reject stock vendor
   modules cannot be released.
-- **Stock CPU clocks** — no overclock, no voltage changes. `scaling_max_freq`
-  is pinned to the hardware maximum below 75 C (see [CPU clocks](#cpu-clocks)).
+- **Stock CPU clocks** — no overclock, no voltage changes. `scaling_min_freq`
+  is pinned to the hardware floor and `scaling_max_freq` to the hardware
+  maximum below 75 C (see [CPU clocks](#cpu-clocks)).
 - **Network defaults** — TCP BBR with fq_codel, enabled at build time.
+
+v1.6.3 pins `scaling_min_freq` to the hardware floor (500 MHz little /
+850 MHz big) in the GKI cpufreq core. Samsung Input Booster and MediaTek
+`touch_boost` / `powerhal_cpu_ctrl` min-QoS requests no longer move the
+minimum when the screen is touched. The 75 C `scaling_max_freq` lock and
+thermal mitigation are unchanged. It also moves the base firmware to
+`A145PXXSFDZK1`: the release string and the pinned vermagic now match that
+firmware, and the boot header keeps its stock OS 15.0.0 / patch 2026-11
+values.
 
 v1.6.2 makes the boot-time scheduler perf tune harmless for ported `system`
 images: `sched_pelt_multiplier` is capped at 1 and the global
@@ -135,7 +145,7 @@ See the ABI section below for the exact reason.
 - **Unlocked bootloader** (the boot image is signed with a public AOSP test key,
   not a Samsung key; this is accepted on unlocked devices).
 - **Odin** (Windows, or Wine on Linux) to flash the AP package.
-- Base firmware **`A145PXXUEDZJ2`** is recommended. The vermagic is pinned to this
+- Base firmware **`A145PXXSFDZK1`** is required. The vermagic is pinned to this
   base; on other firmware revisions the prebuilt `/vendor` modules may report a
   version mismatch.
 - KernelSU manager **v3.3.1 or newer** if you want root.
@@ -161,8 +171,12 @@ flashing can take a few minutes.
 
 ```sh
 adb shell uname -r
-# 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.1
+# 6.6.144-android15-8-abA145PXXSFDZK1-4k-behi-v1.6.3
 ```
+
+For a full firmware/vermagic report, copy `scripts/diag_firmware_header.sh` to the
+phone and run `sh diag_firmware_header.sh`; the report is saved under
+`/sdcard/Download/`.
 
 With root:
 
@@ -177,7 +191,7 @@ Expected CPU limits (stock clocks):
 /sys/devices/system/cpu/cpufreq/policy6/cpuinfo_max_freq:2000000
 ```
 
-Verify the v1.6.1 fixes:
+Verify the v1.6.3 fixes:
 
 ```sh
 # Bogus 125 C flash thermistor reading is filtered (expect 25000)
@@ -192,6 +206,13 @@ su -c 'for i in $(seq 1 120); do \
   printf "%s %s %s\n" "$(date +%T)" \
   "$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq)" \
   "$(cat /sys/devices/system/cpu/cpufreq/policy6/scaling_max_freq)"; sleep 1; done'
+
+# min frequency stays at the hardware floor while touching the screen
+su -c 'for i in $(seq 1 60); do \
+  printf "%s %s %s\n" "$(date +%T)" \
+  "$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq)" \
+  "$(cat /sys/devices/system/cpu/cpufreq/policy6/scaling_min_freq)"; sleep 1; done'
+# expect 500000 and 850000 throughout
 
 # Network defaults
 su -c 'sysctl net.ipv4.tcp_congestion_control net.core.default_qdisc'
@@ -210,17 +231,17 @@ su -c 'lsmod | wc -l; lsmod | head'
 Flashing only changes `boot`, so rollback is a normal Odin flash:
 
 - Flash your previous working boot image, or
-- Flash the full stock firmware for `A145PXXUEDZJ2` (AP + BL + CP + CSC;
+- Flash the full stock firmware for `A145PXXSFDZK1` (AP + BL + CP + CSC;
   use `HOME_CSC` to keep user data).
 
 There is no module or partition to undo.
 
 ## CPU clocks
 
-| Cluster | Max frequency |
-|---|---|
-| little (6 × Cortex-A55) | 1.8 GHz |
-| big (2 × Cortex-A75) | 2.0 GHz |
+| Cluster | Min frequency | Max frequency |
+|---|---|---|
+| little (6 × Cortex-A55) | 500 MHz | 1.8 GHz |
+| big (2 × Cortex-A75) | 850 MHz | 2.0 GHz |
 
 These are the stock values for the G75 (CPU level 6) OPP table used by the
 SM-A145P. The experimental overclock that was tested in v1.4-oc was dropped from
@@ -230,8 +251,10 @@ Below 75 C in the `mtktscpu` thermal zone, `scaling_max_freq` is clamped to
 `cpuinfo.max_freq` in the GKI cpufreq core. MediaTek's ATM cooler still requests
 adaptive power limits around 53-63 C, but they no longer reach sysfs — so the
 maximum stays at 1.8/2.0 GHz instead of oscillating. Above 75 C the clamp is
-removed and normal thermal throttling applies. `scaling_min_freq` is **not**
-clamped: the stock Input Booster touch boost may still raise it for a moment.
+removed and normal thermal throttling applies. `scaling_min_freq` is clamped
+to `cpuinfo.min_freq` (500/850 MHz) in the same GKI cpufreq core, so touch
+boosts from Samsung Input Booster and MediaTek `touch_boost` can no longer
+raise it. The governor still chooses any frequency inside that range.
 
 ## ABI compatibility with stock vendor modules
 
@@ -246,14 +269,16 @@ This project therefore:
 - pins `VERMAGIC_STRING` to the exact stock value in
   `kernel-6.6/include/linux/vermagic.h`;
 - keeps the firmware part of the release string
-  (`android15-8-abA145PXXUEDZJ2-4k`) and only appends `-behi-vX.Y`;
+  (`android15-8-abA145PXXSFDZK1-4k`) and only appends `-behi-vX.Y`;
 - refuses to enable ABI-breaking options (`NF_TABLES*`, `KSM`, `VXLAN`, `IPVLAN`,
   `NF_CONNTRACK_LABELS`, `LRU_GEN`, `CFS_BANDWIDTH`, `CGROUP_PIDS`, …);
-- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.6.2.txt` on every
-  build and fails if any exported CRC differs or disappears. The v1.6.2
-  baseline is an unchanged copy of v1.6.1, which is the v1.6 one with the ACK
-  6.6.118 -> 6.6.144 delta's non-ABI changes pre-applied; none of them is part
-  of the GKI ABI.
+- runs `scripts/kmi_check.py` against `configs/kmi-baseline-v1.6.3.txt` on every
+  build and fails if any exported CRC differs or disappears. The v1.6.3
+  baseline is an unchanged copy of v1.6.2; the cpufreq min-QoS lock and the
+  firmware-base/vermagic update add no exported symbol and change no CRC.
+  The chain goes back to v1.6.1 and the
+  ACK 6.6.118 -> 6.6.144 delta's non-ABI changes; none of them is part of the
+  GKI ABI.
 
 ### Why `--cpus` and `--pids-limit` are not supported
 
@@ -358,10 +383,12 @@ then an AVB hash footer sized to the 32 MiB `boot` partition.
 | `.github/workflows/build.yml` | Full CI: toolchain, patches, KernelSU, config gates, build, packaging, release |
 | `kernel/` | Device kernel modules tree (`kernel_device_modules-6.6`) and the Kleaf/Bazel build entrypoint |
 | `kernel-6.6/` | GKI kernel source (Android common kernel 6.6) |
-| `configs/kmi-baseline-v1.6.2.txt` | Known-good exported symbol CRC baseline (unchanged from v1.6.1) |
-| `configs/stock-a145pxxuedzj2.config` | Reference stock configuration |
+| `configs/kmi-baseline-v1.6.3.txt` | Known-good exported symbol CRC baseline (unchanged from v1.6.2) |
+| `configs/stock-a145pxxuedzj2.config` | Reference stock configuration (v1.6 baseline) |
 | `scripts/kmi_check.py` | ABI gate used by CI |
 | `scripts/build_boot_image.sh` | 32 MiB boot image + AVB footer builder |
+| `scripts/diag_input_booster.sh` | On-device root diagnostic for touch min-frequency boosts |
+| `scripts/diag_firmware_header.sh` | On-device root report for firmware identity and vendor-module vermagic |
 | `build_kernel.sh` | Small convenience wrapper around the device-tree build |
 
 ## Troubleshooting
@@ -372,13 +399,18 @@ intact.
 
 **Wi-Fi / GPS / FM / other hardware missing.** Those drivers are prebuilt modules
 from `/vendor`; if they are rejected, the boot image and the firmware base do not
-match. Make sure the device runs `A145PXXUEDZJ2` and that the boot image comes
+match. Make sure the device runs `A145PXXSFDZK1` and that the boot image comes
 from this project's release.
 
 **`scaling_max_freq` sometimes dips.** Below 75 C it should stay at 1.8/2.0 GHz
 even when the log shows `set_adaptive_cpu_power_limit` at 53-63 C — that is the
 MediaTek ATM cooler requesting a limit that the GKI clamp now ignores. If the
 `mtktscpu` zone reads 75 C or above, throttling is expected and intentional.
+
+**`scaling_min_freq` still moves on touch.** It should stay at 500/850 MHz;
+Samsung Input Booster and MediaTek `touch_boost` min-QoS requests are
+neutralised in the GKI cpufreq core. If it still jumps, the device is not
+running a v1.6.3 (or newer) boot image.
 
 **Thermal zone reports 125 C for `mtktsflash`.** That is the raw vendor module
 reading; it is expected in `dmesg`, but sysfs and `vbus_ctrl` see `25000`
@@ -398,7 +430,7 @@ required for those adapters.
 - [Droidspaces](https://github.com/ravindu644/Droidspaces-OSS) by ravindu644 —
   container support and the GKI SYSVIPC kABI patch.
 - Android `mkbootimg` and `avbtool` for image creation and AVB signing.
-- Samsung for the stock `A145PXXUEDZJ2` firmware and MediaTek for the MT6769V
+- Samsung for the stock `A145PXXSFDZK1` firmware and MediaTek for the MT6769V
   vendor modules this kernel stays compatible with.
 
 ## Disclaimer

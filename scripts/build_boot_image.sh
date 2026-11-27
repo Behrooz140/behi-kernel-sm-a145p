@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Build a 32 MiB Samsung-compatible boot image from a gzipped kernel.
 #
-# Layout produced (identical to the previously working custom boot.img):
-#   [ 4 KiB boot header v4 ][ gzip kernel ][ pad to 4 KiB ]
-#   [ "SEANDROIDENFORCE" ][ AVB hash footer, 32 MiB partition ]
+# Layout produced (header matches stock A145PXXSFDZK1 boot.img):
+#   [ 4 KiB boot header v4, OS 15.0.0 / patch 2026-11 ][ gzip kernel ]
+#   [ pad to 4 KiB ][ "SEANDROIDENFORCE" ][ AVB hash footer, 32 MiB partition ]
 #
 # The AVB footer is signed with a public AOSP test key. This is accepted by
 # the bootloader on unlocked devices; it is NOT a Samsung signature.
@@ -22,7 +22,7 @@ AVB_KEY="${AVB_KEY:?AVB_KEY must point to a PEM signing key}"
 AVB_ALGORITHM="${AVB_ALGORITHM:-SHA256_RSA4096}"
 BOOT_PARTITION_SIZE="${BOOT_PARTITION_SIZE:-33554432}"
 OS_VERSION="${OS_VERSION:-15.0.0}"
-OS_PATCH_LEVEL="${OS_PATCH_LEVEL:-2026-07}"
+OS_PATCH_LEVEL="${OS_PATCH_LEVEL:-2026-11}"
 
 PYTHON="${PYTHON:-python3}"
 MBOOTIMG_DIR="$(dirname "$MBOOTIMG")"

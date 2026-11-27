@@ -29,7 +29,7 @@ env:
   # Base firmware release must stay identical to stock so the vermagic stamp
   # matches the prebuilt /vendor modules. The user-visible release string adds
   # the "behi" branding and the package version at the end:
-  # 6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v1.6.2
+  # 6.6.144-android15-8-abA145PXXSFDZK1-4k-behi-v1.6.3
   #
   # Cutting a new release (every kernel update):
   #   1. bump CONFIG_LOCALVERSION ("-4k-behi-vX.Y") in
@@ -37,12 +37,12 @@ env:
   #      kernel/kernel_device_modules-6.6/arch/arm64/configs/a14m_defconfig
   #   2. push/merge to main: the workflow derives the tag from that value,
   #      builds and publishes the GitHub release automatically.
-  BUILD_NUMBER: A145PXXUEDZJ2
-  KERNEL_BASE_RELEASE: 6.6.144-android15-8-abA145PXXUEDZJ2-4k
+  BUILD_NUMBER: A145PXXSFDZK1
+  KERNEL_BASE_RELEASE: 6.6.144-android15-8-abA145PXXSFDZK1-4k
   # The vermagic stamp stays at the stock firmware's 6.6.118 value on purpose:
   # /vendor modules were built against 6.6.118 and their vermagic is fixed, so
   # it must not follow the (newer) kernel version we rebase onto.
-  STOCK_VERMAGIC: '6.6.118-android15-8-abA145PXXUEDZJ2-4k SMP preempt mod_unload modversions aarch64'
+  STOCK_VERMAGIC: '6.6.118-android15-8-abA145PXXSFDZK1-4k SMP preempt mod_unload modversions aarch64'
   KSU_TAG: v3.3.1
   KSU_COMMIT: 0c0fdb960178fa12d80d6cbcfdcb6ad8be6a865d
   KSU_COMMITS: '2680'
@@ -493,14 +493,14 @@ jobs:
             echo "avbtool         : ${AVB_COMMIT}"
             echo "Boot partition  : ${BOOT_PARTITION_SIZE} bytes"
             echo "AVB signing key : AOSP testkey_rsa4096 (SHA256_RSA4096)"
-            echo "Stock config    : configs/stock-a145pxxuedzj2.config"
+            echo "Reference config: configs/stock-a145pxxuedzj2.config (v1.6 baseline)"
           } | tee "$REL/build-info.txt"
 
           cat > "$REL/RELEASE_NOTES.md" <<EOF
           # Galaxy A14 (SM-A145P) behi custom kernel ${VERSION}
 
           Kernel release: \`${KERNEL_RELEASE}\`
-          Base firmware: \`A145PXXUEDZJ2\`
+          Base firmware: \`${BUILD_NUMBER}\`
           Built from commit: \`${FULL_SHA}\`
 
           ## Contents
@@ -508,6 +508,28 @@ jobs:
           - \`A145P-Kernel-v${VERSION}-boot.img\` — 32 MiB boot image (header v4, AVB test-key signed)
           - \`A145P-Kernel-v${VERSION}-Odin.tar.md5\` — Odin AP slot package containing \`boot.img\`
           - \`build-info.txt\`, \`SHA256SUMS\`
+
+          ## Changes in 1.6.3
+
+          - Frequency: scaling_min_freq is now pinned to the hardware floor
+            (500 MHz little / 850 MHz big) in the GKI cpufreq core. The
+            Samsung Input Booster and MediaTek touch_boost / powerhal_cpu_ctrl
+            min-QoS requests on touch no longer move it, so the minimum stays
+            constant. The 75 C scaling_max_freq lock and all thermal
+            mitigation are unchanged.
+          - No module or vendor change is needed: the lock lives in the boot
+            image and applies to the prebuilt /vendor_dlkm modules too.
+          - Firmware: the base is now \`${BUILD_NUMBER}\` and the module ABI
+            stamp is pinned to the stock \`${STOCK_VERMAGIC}\`, matching the
+            modules in the updated firmware. The boot header keeps its stock
+            OS 15.0.0 / patch 2026-11 values.
+
+          ## Changes in 1.6.2
+
+          - Boot-time scheduler perf tune is harmless on ported system
+            images: sched_pelt_multiplier is capped at 1 and the global
+            sched_util_clamp_min defaults to and stays at 0. This replaces
+            the a34_coolfix Magisk module. KMI and vermagic are unchanged.
 
           ## Changes in 1.6.1
 
@@ -540,6 +562,8 @@ jobs:
           - USB serial core kept as a module exactly like the stock firmware
             (no \`.ko\` files are shipped, so USB-serial adapters need a module build)
           - Kernel stack offset randomization
+          - CPU floors: scaling_min_freq pinned to the hardware floor, and
+            scaling_max_freq pinned to the hardware maximum below 75 C
           - ABI guard: exported symbol CRCs are compared with a known-good
             baseline on every build (v1.6+ = v1.5 adjusted for the 6.6.118 ->
             6.6.144 ACK delta's non-ABI changes)
@@ -551,17 +575,18 @@ jobs:
           \`uname -r\` show:
 
           \`\`\`
-          6.6.144-android15-8-abA145PXXUEDZJ2-4k-behi-v${VERSION}
+          ${KERNEL_BASE_RELEASE}-behi-v${VERSION}
           \`\`\`
 
           The module ABI stamp (vermagic) is deliberately pinned to the stock
-          value \`6.6.118-android15-8-abA145PXXUEDZJ2-4k SMP preempt mod_unload
-          modversions aarch64\`, so the prebuilt modules in \`/vendor/lib/modules\`
-          keep loading. Only the displayed release string changed.
+          value \`${STOCK_VERMAGIC}\`, so the prebuilt modules in
+          \`/vendor/lib/modules\` keep loading. Only the displayed release string
+          changed.
 
           ## Requirements
 
           - **Unlocked bootloader** (the boot image is signed with a public AOSP test key, not Samsung's key).
+          - Base firmware \`${BUILD_NUMBER}\` (the module vermagic is pinned to it).
           - Recommended: KernelSU manager ${KSU_TAG} or newer.
 
           ## Flash (Odin)
